@@ -33,7 +33,7 @@ export interface ServerRegisterRequest {
   password: string
   ip_address: string
   port: number
-  status: 'up' | 'down' | 'decommissioned' | 'inactive'
+  status?: 'up' | 'down' | 'decommissioned' | 'inactive' | null
 }
 
 export interface Server {
