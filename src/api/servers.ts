@@ -27,4 +27,9 @@ export const serversApi = {
     const { data } = await apiClient.post('/servers/monitoring/collect-all')
     return data
   },
+
+  getAllServersWithContainers: async (): Promise<any> => {
+    const { data } = await apiClient.post('/servers/containers/all')
+    return data
+  },
 }

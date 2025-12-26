@@ -77,40 +77,10 @@ const fetchServersData = async () => {
   loading.value = true
   error.value = ''
   try {
-    // Just fetch the list of servers, no health data or containers yet
-    const serversResponse = await serversApi.getServers()
-    console.log('Full servers response:', serversResponse)
-
-    // Handle different possible response structures
-    let servers = []
-    if (Array.isArray(serversResponse)) {
-      // Response is array directly
-      servers = serversResponse
-    } else if (serversResponse?.data) {
-      // Response is wrapped in { data: [...] }
-      if (Array.isArray(serversResponse.data)) {
-        servers = serversResponse.data
-      } else if (serversResponse.data.data && Array.isArray(serversResponse.data.data)) {
-        servers = serversResponse.data.data
-      }
-    }
-
-    console.log('Extracted servers array:', servers)
-
-    serversData.value = servers.map((item: any) => {
-      console.log('Processing server item:', item)
-      return {
-        server: item,
-        current_health: null,
-        containers: [],
-      }
-    })
-
-    console.log('Final mapped servers:', serversData.value)
-    console.log('serversData length:', serversData.value.length)
+    const response = await serversApi.getAllServersWithContainers()
+    serversData.value = response?.data || []
   } catch (err: any) {
     error.value = err.response?.data?.error || 'Failed to fetch server data'
-    console.error('Failed to fetch servers:', err)
   } finally {
     loading.value = false
   }
@@ -126,7 +96,6 @@ const refreshAll = async () => {
     }
   } catch (err: any) {
     error.value = err.response?.data?.error || 'Failed to refresh server data'
-    console.error('Failed to refresh servers:', err)
   } finally {
     loading.value = false
   }
@@ -135,31 +104,18 @@ const refreshAll = async () => {
 const fetchServerContainers = async (serverId: number) => {
   loadingServers.value.add(serverId)
   try {
-    // Fetch both health and containers
     const [healthResponse, containersResponse] = await Promise.all([
       serversApi.getServerHealth(serverId),
       serversApi.getServerContainers(serverId),
     ])
 
-    console.log('Health response:', healthResponse)
-    console.log('Containers response:', containersResponse)
-
     const serverIndex = serversData.value.findIndex((s) => s.server?.id === serverId)
     if (serverIndex !== -1 && serversData.value[serverIndex]) {
-      // server-health returns { server: {...}, health: {...} }
-      const health = (healthResponse as any)?.health || healthResponse || null
-      serversData.value[serverIndex].current_health = health
-
-      // container-data returns array directly or wrapped in data
-      const containers = Array.isArray(containersResponse)
-        ? containersResponse
-        : (containersResponse as any)?.data || []
-      serversData.value[serverIndex].containers = containers
-
-      console.log('Updated server at index', serverIndex, serversData.value[serverIndex])
+      serversData.value[serverIndex].current_health = healthResponse?.data || null
+      serversData.value[serverIndex].containers = containersResponse?.data || []
     }
   } catch (err) {
-    console.error(`Failed to fetch data for server ${serverId}:`, err)
+    // Silently fail - error handling can be added if needed
   } finally {
     loadingServers.value.delete(serverId)
   }
@@ -512,7 +468,7 @@ onMounted(() => {
                         <span class="text-xs font-semibold text-gray-900">
                           {{
                             serverData.current_health
-                              ? (serverData.current_health.cpu_usage || 0).toFixed(1)
+                              ? Number(serverData.current_health.cpu_usage || 0).toFixed(1)
                               : '-'
                           }}%
                         </span>
@@ -521,10 +477,10 @@ onMounted(() => {
                         <div
                           :class="[
                             'h-full rounded-full transition-all duration-300',
-                            getUsageColor(serverData.current_health?.cpu_usage || 0),
+                            getUsageColor(Number(serverData.current_health?.cpu_usage || 0)),
                           ]"
                           :style="{
-                            width: `${Math.min(serverData.current_health?.cpu_usage || 0, 100)}%`,
+                            width: `${Math.min(Number(serverData.current_health?.cpu_usage || 0), 100)}%`,
                           }"
                         ></div>
                       </div>
@@ -540,7 +496,7 @@ onMounted(() => {
                         <span class="text-xs font-semibold text-gray-900">
                           {{
                             serverData.current_health
-                              ? (serverData.current_health.memory_usage || 0).toFixed(1)
+                              ? Number(serverData.current_health.memory_usage || 0).toFixed(1)
                               : '-'
                           }}%
                         </span>
@@ -549,10 +505,10 @@ onMounted(() => {
                         <div
                           :class="[
                             'h-full rounded-full transition-all duration-300',
-                            getUsageColor(serverData.current_health?.memory_usage || 0),
+                            getUsageColor(Number(serverData.current_health?.memory_usage || 0)),
                           ]"
                           :style="{
-                            width: `${Math.min(serverData.current_health?.memory_usage || 0, 100)}%`,
+                            width: `${Math.min(Number(serverData.current_health?.memory_usage || 0), 100)}%`,
                           }"
                         ></div>
                       </div>
@@ -568,7 +524,7 @@ onMounted(() => {
                         <span class="text-xs font-semibold text-gray-900">
                           {{
                             serverData.current_health
-                              ? (serverData.current_health.disk_usage || 0).toFixed(1)
+                              ? Number(serverData.current_health.disk_usage || 0).toFixed(1)
                               : '-'
                           }}%
                         </span>
@@ -577,10 +533,10 @@ onMounted(() => {
                         <div
                           :class="[
                             'h-full rounded-full transition-all duration-300',
-                            getUsageColor(serverData.current_health?.disk_usage || 0),
+                            getUsageColor(Number(serverData.current_health?.disk_usage || 0)),
                           ]"
                           :style="{
-                            width: `${Math.min(serverData.current_health?.disk_usage || 0, 100)}%`,
+                            width: `${Math.min(Number(serverData.current_health?.disk_usage || 0), 100)}%`,
                           }"
                         ></div>
                       </div>
