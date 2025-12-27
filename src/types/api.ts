@@ -36,6 +36,14 @@ export interface ServerRegisterRequest {
   status?: 'up' | 'down' | 'decommissioned' | 'inactive' | null
 }
 
+export interface ServerUpdateRequest {
+  name?: string
+  password?: string
+  ip_address?: string
+  port?: number
+  status?: 'up' | 'down' | 'decommissioned' | 'inactive'
+}
+
 export interface Server {
   id: number
   user_name: string

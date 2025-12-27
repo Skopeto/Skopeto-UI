@@ -2,7 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import {
-  Server,
+  Server as ServerIcon,
   Activity,
   Settings,
   Box,
@@ -11,12 +11,13 @@ import {
   TrendingUp,
 } from 'lucide-vue-next'
 import { serversApi } from '@/api/servers'
-import type { ServerWithHealth, ServerRegisterRequest } from '@/types/api'
+import type { ServerWithHealth, ServerRegisterRequest, ServerUpdateRequest, Server } from '@/types/api'
 import TabContainer from '@/components/tabs/TabContainer.vue'
 import ServerStatusTab from '@/components/dashboard/ServerStatusTab.vue'
 import ServerManagementTab from '@/components/dashboard/ServerManagementTab.vue'
 import DockerManagementTab from '@/components/dashboard/DockerManagementTab.vue'
 import RegisterServerModal from '@/components/modals/RegisterServerModal.vue'
+import EditServerModal from '@/components/modals/EditServerModal.vue'
 
 const router = useRouter()
 
@@ -29,6 +30,10 @@ const error = ref('')
 const showRegisterModal = ref(false)
 const registerError = ref('')
 const registerLoading = ref(false)
+const showEditModal = ref(false)
+const editError = ref('')
+const editLoading = ref(false)
+const serverToEdit = ref<Server | null>(null)
 const serverManagementTabRef = ref<InstanceType<typeof ServerManagementTab> | null>(null)
 
 // Tabs configuration
@@ -159,8 +164,31 @@ const handleDeleteServer = async (serverId: number) => {
 }
 
 const handleEditServer = (serverId: number) => {
-  // TODO: Implement edit functionality in future
-  console.log('Edit server:', serverId)
+  const serverData = serversData.value.find((s) => s.server?.id === serverId)
+  if (serverData?.server) {
+    serverToEdit.value = serverData.server
+    editError.value = ''
+    showEditModal.value = true
+  }
+}
+
+const handleUpdateServer = async (formData: ServerUpdateRequest) => {
+  if (!serverToEdit.value) return
+
+  editError.value = ''
+  editLoading.value = true
+
+  try {
+    await serversApi.updateServer(serverToEdit.value.id, formData)
+    showEditModal.value = false
+    editError.value = ''
+    serverToEdit.value = null
+    await fetchServersData()
+  } catch (err: any) {
+    editError.value = err.response?.data?.error || 'Failed to update server'
+  } finally {
+    editLoading.value = false
+  }
 }
 
 // Computed stats
@@ -184,7 +212,7 @@ const stats = computed(() => {
     {
       label: 'Total Servers',
       value: total.toString(),
-      icon: Server,
+      icon: ServerIcon,
       trend: `${total}`,
       color: 'blue',
     },
@@ -227,7 +255,7 @@ onMounted(() => {
             <div
               class="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center shadow-lg"
             >
-              <Server class="w-6 h-6 text-white" />
+              <ServerIcon class="w-6 h-6 text-white" />
             </div>
             <div>
               <h1 class="text-2xl font-bold text-gray-900">Skopeto</h1>
@@ -299,6 +327,16 @@ onMounted(() => {
       :error="registerError"
       @close="showRegisterModal = false"
       @submit="handleRegisterServer"
+    />
+
+    <!-- Edit Server Modal -->
+    <EditServerModal
+      :show="showEditModal"
+      :loading="editLoading"
+      :error="editError"
+      :server="serverToEdit"
+      @close="showEditModal = false"
+      @submit="handleUpdateServer"
     />
   </div>
 </template>

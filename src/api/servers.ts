@@ -1,5 +1,5 @@
 import apiClient from './client'
-import type { ServerRegisterRequest, Server } from '@/types/api'
+import type { ServerRegisterRequest, ServerUpdateRequest, Server } from '@/types/api'
 
 export const serversApi = {
   register: async (serverData: ServerRegisterRequest): Promise<Server> => {
@@ -29,5 +29,10 @@ export const serversApi = {
 
   deleteServer: async (serverId: number): Promise<void> => {
     await apiClient.delete(`/servers/delete/${serverId}`)
+  },
+
+  updateServer: async (serverId: number, serverData: ServerUpdateRequest): Promise<Server> => {
+    const { data } = await apiClient.patch(`/servers/edit/${serverId}`, serverData)
+    return data.data
   },
 }
