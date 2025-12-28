@@ -8,7 +8,7 @@ export const serversApi = {
   },
 
   getServerWithContainers: async (serverId: number): Promise<any> => {
-    const { data } = await apiClient.get(`/servers/monitoting/${serverId}`)
+    const { data } = await apiClient.post(`/servers/containers/collect/${serverId}`)
     return data
   },
 
@@ -18,7 +18,7 @@ export const serversApi = {
   },
 
   collectAll: async (): Promise<any> => {
-    const { data } = await apiClient.get('/servers/monitoring/collect-all')
+    const { data } = await apiClient.post('/servers/monitoring/collect-all')
     return data
   },
 

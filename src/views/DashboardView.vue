@@ -67,7 +67,12 @@ const fetchServersData = async () => {
   error.value = ''
   try {
     const response = await serversApi.getAllServersWithContainers()
-    serversData.value = response?.data || []
+    // Map server_health to current_health since /containers/all returns server_health
+    serversData.value = (response?.data || []).map((item: any) => ({
+      server: item.server,
+      current_health: item.server_health,
+      containers: item.containers,
+    }))
   } catch (err: any) {
     error.value = err.response?.data?.error || 'Failed to fetch server data'
   } finally {
