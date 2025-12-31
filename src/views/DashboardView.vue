@@ -9,22 +9,30 @@ import {
   LogOut,
   RefreshCw,
   TrendingUp,
+  Database as DatabaseIcon,
 } from 'lucide-vue-next'
 import { serversApi } from '@/api/servers'
-import type { ServerWithHealth, ServerRegisterRequest, ServerUpdateRequest, Server } from '@/types/api'
+import type { MonitoringData, ServerRegisterRequest, ServerUpdateRequest, Server, DatabaseRegisterRequest, DatabaseUpdateRequest, Database, ServerDatabasesData } from '@/types/api'
 import TabContainer from '@/components/tabs/TabContainer.vue'
-import ServerStatusTab from '@/components/dashboard/ServerStatusTab.vue'
+import ServersTab from '@/components/dashboard/ServersTab.vue'
+import ServerContainersTab from '@/components/dashboard/ServerContainersTab.vue'
+import ServerDatabasesTab from '@/components/dashboard/ServerDatabasesTab.vue'
 import ServerManagementTab from '@/components/dashboard/ServerManagementTab.vue'
+import DatabaseManagementTab from '@/components/dashboard/DatabaseManagementTab.vue'
 import DockerManagementTab from '@/components/dashboard/DockerManagementTab.vue'
 import RegisterServerModal from '@/components/modals/RegisterServerModal.vue'
 import EditServerModal from '@/components/modals/EditServerModal.vue'
+import RegisterDatabaseModal from '@/components/modals/RegisterDatabaseModal.vue'
+import EditDatabaseModal from '@/components/modals/EditDatabaseModal.vue'
 
 const router = useRouter()
 
 // State
-const serversData = ref<ServerWithHealth[]>([])
+const monitoringData = ref<MonitoringData[]>([])
+const databasesData = ref<ServerDatabasesData[]>([])
 const expandedServers = ref<Set<number>>(new Set())
 const loading = ref(false)
+const loadingDatabases = ref(false)
 const loadingServers = ref<Set<number>>(new Set())
 const error = ref('')
 const showRegisterModal = ref(false)
@@ -36,10 +44,24 @@ const editLoading = ref(false)
 const serverToEdit = ref<Server | null>(null)
 const serverManagementTabRef = ref<InstanceType<typeof ServerManagementTab> | null>(null)
 
+// Database state
+const showRegisterDatabaseModal = ref(false)
+const registerDatabaseError = ref('')
+const registerDatabaseLoading = ref(false)
+const selectedServerId = ref<number>(0)
+const showEditDatabaseModal = ref(false)
+const editDatabaseError = ref('')
+const editDatabaseLoading = ref(false)
+const databaseToEdit = ref<Database | null>(null)
+const databaseManagementTabRef = ref<InstanceType<typeof DatabaseManagementTab> | null>(null)
+
 // Tabs configuration
 const tabs = [
-  { id: 'status', label: 'Server Status', icon: Activity },
-  { id: 'management', label: 'Server Management', icon: Settings },
+  { id: 'servers', label: 'Servers', icon: ServerIcon },
+  { id: 'containers', label: 'Servers & Containers', icon: Box },
+  { id: 'databases', label: 'Servers & Databases', icon: DatabaseIcon },
+  { id: 'management', label: 'Manage Servers', icon: Settings },
+  { id: 'manage-databases', label: 'Manage Databases', icon: DatabaseIcon },
   { id: 'docker', label: 'Docker Management', icon: Box },
 ]
 
@@ -66,17 +88,36 @@ const fetchServersData = async () => {
   loading.value = true
   error.value = ''
   try {
-    const response = await serversApi.getAllServersWithContainers()
-    // Map server_health to current_health since /containers/all returns server_health
-    serversData.value = (response?.data || []).map((item: any) => ({
-      server: item.server,
-      current_health: item.server_health,
-      containers: item.containers,
-    }))
+    const response = await serversApi.collectAll()
+    if (response?.data) {
+      monitoringData.value = Array.isArray(response.data) ? response.data : []
+
+      // Populate databasesData from monitoring data
+      databasesData.value = monitoringData.value.map((serverData) => ({
+        server: serverData.server,
+        current_health: serverData.current_health,
+        databases: serverData.databases || []
+      }))
+    }
   } catch (err: any) {
     error.value = err.response?.data?.error || 'Failed to fetch server data'
   } finally {
     loading.value = false
+  }
+}
+
+const fetchDatabasesData = async () => {
+  loadingDatabases.value = true
+  error.value = ''
+  try {
+    const response = await serversApi.getAllDatabases()
+    if (response?.data) {
+      databasesData.value = Array.isArray(response.data) ? response.data : []
+    }
+  } catch (err: any) {
+    error.value = err.response?.data?.error || 'Failed to fetch databases data'
+  } finally {
+    loadingDatabases.value = false
   }
 }
 
@@ -86,7 +127,7 @@ const refreshAll = async () => {
   try {
     const response = await serversApi.collectAll()
     if (response?.data) {
-      serversData.value = Array.isArray(response.data) ? response.data : []
+      monitoringData.value = Array.isArray(response.data) ? response.data : []
     }
   } catch (err: any) {
     error.value = err.response?.data?.error || 'Failed to refresh server data'
@@ -100,12 +141,13 @@ const fetchServerContainers = async (serverId: number) => {
   try {
     const response = await serversApi.getServerWithContainers(serverId)
 
-    const serverIndex = serversData.value.findIndex((s) => s.server?.id === serverId)
-    if (serverIndex !== -1 && serversData.value[serverIndex] && response?.data) {
-      serversData.value[serverIndex].server =
-        response.data.server || serversData.value[serverIndex].server
-      serversData.value[serverIndex].current_health = response.data.current_health || null
-      serversData.value[serverIndex].containers = response.data.containers || []
+    const serverIndex = monitoringData.value.findIndex((s) => s.server?.id === serverId)
+    if (serverIndex !== -1 && monitoringData.value[serverIndex] && response?.data) {
+      monitoringData.value[serverIndex].server =
+        response.data.server || monitoringData.value[serverIndex].server
+      monitoringData.value[serverIndex].current_health = response.data.current_health || null
+      monitoringData.value[serverIndex].containers = response.data.containers || []
+      monitoringData.value[serverIndex].databases = response.data.databases || []
     }
   } catch (err) {
     // Silently fail - error handling can be added if needed
@@ -120,7 +162,7 @@ const toggleServerExpand = async (serverId: number) => {
   } else {
     expandedServers.value.add(serverId)
     // Fetch health and containers when expanding if not already loaded
-    const server = serversData.value.find((s) => s.server?.id === serverId)
+    const server = monitoringData.value.find((s) => s.server?.id === serverId)
     if (server && !server.current_health) {
       await fetchServerContainers(serverId)
     }
@@ -130,6 +172,11 @@ const toggleServerExpand = async (serverId: number) => {
 const refreshServer = async (serverId: number, event: Event) => {
   event.stopPropagation() // Prevent toggle when clicking refresh
   await fetchServerContainers(serverId)
+}
+
+const refreshServerDatabases = async (_serverId: number, event: Event) => {
+  event.stopPropagation() // Prevent toggle when clicking refresh
+  await fetchDatabasesData()
 }
 
 const handleRegisterServer = async (formData: ServerRegisterRequest) => {
@@ -169,7 +216,7 @@ const handleDeleteServer = async (serverId: number) => {
 }
 
 const handleEditServer = (serverId: number) => {
-  const serverData = serversData.value.find((s) => s.server?.id === serverId)
+  const serverData = monitoringData.value.find((s) => s.server?.id === serverId)
   if (serverData?.server) {
     serverToEdit.value = serverData.server
     editError.value = ''
@@ -196,15 +243,80 @@ const handleUpdateServer = async (formData: ServerUpdateRequest) => {
   }
 }
 
+// Database handlers
+const handleAddDatabase = (serverId: number) => {
+  selectedServerId.value = serverId
+  registerDatabaseError.value = ''
+  showRegisterDatabaseModal.value = true
+}
+
+const handleRegisterDatabase = async (formData: DatabaseRegisterRequest) => {
+  registerDatabaseError.value = ''
+  registerDatabaseLoading.value = true
+
+  try {
+    await serversApi.registerDatabase(formData)
+    showRegisterDatabaseModal.value = false
+    registerDatabaseError.value = ''
+    await fetchServersData()
+  } catch (err: any) {
+    registerDatabaseError.value = err.response?.data?.error || 'Failed to register database'
+  } finally {
+    registerDatabaseLoading.value = false
+  }
+}
+
+const handleDeleteDatabase = async (databaseId: number) => {
+  try {
+    await serversApi.deleteDatabase(databaseId)
+    await fetchServersData()
+    databaseManagementTabRef.value?.closeDeleteDialog()
+  } catch (err: any) {
+    error.value = err.response?.data?.error || 'Failed to delete database'
+  }
+}
+
+const handleEditDatabase = (databaseId: number) => {
+  // Find the database in the monitoring data
+  for (const serverData of monitoringData.value) {
+    const dbData = serverData.databases?.find((d) => d.database.id === databaseId)
+    if (dbData) {
+      databaseToEdit.value = dbData.database
+      editDatabaseError.value = ''
+      showEditDatabaseModal.value = true
+      break
+    }
+  }
+}
+
+const handleUpdateDatabase = async (formData: DatabaseUpdateRequest) => {
+  if (!databaseToEdit.value) return
+
+  editDatabaseError.value = ''
+  editDatabaseLoading.value = true
+
+  try {
+    await serversApi.updateDatabase(databaseToEdit.value.id!, formData)
+    showEditDatabaseModal.value = false
+    editDatabaseError.value = ''
+    databaseToEdit.value = null
+    await fetchServersData()
+  } catch (err: any) {
+    editDatabaseError.value = err.response?.data?.error || 'Failed to update database'
+  } finally {
+    editDatabaseLoading.value = false
+  }
+}
+
 // Computed stats
 const stats = computed(() => {
-  const total = serversData.value.length
-  const healthy = serversData.value.filter((s) => s.current_health?.status === 'healthy').length
-  const unhealthy = serversData.value.filter((s) => s.current_health?.status === 'unhealthy').length
+  const total = monitoringData.value.length
+  const healthy = monitoringData.value.filter((s) => s.current_health?.status === 'healthy').length
+  const unhealthy = monitoringData.value.filter((s) => s.current_health?.status === 'unhealthy').length
 
   const avgUptime =
     total > 0
-      ? serversData.value.reduce((acc, s) => {
+      ? monitoringData.value.reduce((acc, s) => {
           const uptime = s.current_health?.uptime
           if (!uptime || uptime === 'unknown') return acc
 
@@ -297,9 +409,19 @@ onMounted(() => {
 
       <!-- Tabbed Interface -->
       <TabContainer :tabs="tabs" storage-key="dashboard-active-tab">
-        <template #status>
-          <ServerStatusTab
-            :servers="serversData"
+        <template #servers>
+          <ServersTab
+            :monitoring-data="monitoringData"
+            :stats="stats"
+            :loading="loading"
+            :loading-servers="loadingServers"
+            @refresh-server="refreshServer"
+          />
+        </template>
+
+        <template #containers>
+          <ServerContainersTab
+            :monitoring-data="monitoringData"
             :stats="stats"
             :loading="loading"
             :loading-servers="loadingServers"
@@ -309,13 +431,36 @@ onMounted(() => {
           />
         </template>
 
+        <template #databases>
+          <ServerDatabasesTab
+            :databases-data="databasesData"
+            :stats="stats"
+            :loading="loadingDatabases"
+            :loading-servers="loadingServers"
+            :expanded-servers="expandedServers"
+            @toggle-expand="toggleServerExpand"
+            @refresh-server="refreshServerDatabases"
+            @refresh-databases="fetchDatabasesData"
+          />
+        </template>
+
         <template #management>
           <ServerManagementTab
             ref="serverManagementTabRef"
-            :servers="serversData"
+            :servers="monitoringData"
             @add="showRegisterModal = true"
             @delete="handleDeleteServer"
             @edit="handleEditServer"
+          />
+        </template>
+
+        <template #manage-databases>
+          <DatabaseManagementTab
+            ref="databaseManagementTabRef"
+            :monitoring-data="monitoringData"
+            @add="handleAddDatabase"
+            @delete="handleDeleteDatabase"
+            @edit="handleEditDatabase"
           />
         </template>
 
@@ -342,6 +487,26 @@ onMounted(() => {
       :server="serverToEdit"
       @close="showEditModal = false"
       @submit="handleUpdateServer"
+    />
+
+    <!-- Register Database Modal -->
+    <RegisterDatabaseModal
+      :show="showRegisterDatabaseModal"
+      :loading="registerDatabaseLoading"
+      :error="registerDatabaseError"
+      :server-id="selectedServerId"
+      @close="showRegisterDatabaseModal = false"
+      @submit="handleRegisterDatabase"
+    />
+
+    <!-- Edit Database Modal -->
+    <EditDatabaseModal
+      :show="showEditDatabaseModal"
+      :loading="editDatabaseLoading"
+      :error="editDatabaseError"
+      :database="databaseToEdit"
+      @close="showEditDatabaseModal = false"
+      @submit="handleUpdateDatabase"
     />
   </div>
 </template>

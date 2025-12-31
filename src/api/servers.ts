@@ -1,5 +1,5 @@
 import apiClient from './client'
-import type { ServerRegisterRequest, ServerUpdateRequest, Server } from '@/types/api'
+import type { ServerRegisterRequest, ServerUpdateRequest, Server, DatabaseRegisterRequest, DatabaseUpdateRequest, Database } from '@/types/api'
 
 export const serversApi = {
   register: async (serverData: ServerRegisterRequest): Promise<Server> => {
@@ -8,7 +8,7 @@ export const serversApi = {
   },
 
   getServerWithContainers: async (serverId: number): Promise<any> => {
-    const { data } = await apiClient.post(`/servers/containers/collect/${serverId}`)
+    const { data } = await apiClient.post(`/containers/collect/${serverId}`)
     return data
   },
 
@@ -18,12 +18,17 @@ export const serversApi = {
   },
 
   collectAll: async (): Promise<any> => {
-    const { data } = await apiClient.post('/servers/monitoring/collect-all')
+    const { data } = await apiClient.post('/monitoring/collect-all')
     return data
   },
 
   getAllServersWithContainers: async (): Promise<any> => {
-    const { data } = await apiClient.get('/servers/containers/all')
+    const { data } = await apiClient.get('/containers/all')
+    return data
+  },
+
+  getAllDatabases: async (): Promise<any> => {
+    const { data } = await apiClient.get('/databases/collect/all')
     return data
   },
 
@@ -33,6 +38,21 @@ export const serversApi = {
 
   updateServer: async (serverId: number, serverData: ServerUpdateRequest): Promise<Server> => {
     const { data } = await apiClient.patch(`/servers/edit/${serverId}`, serverData)
+    return data.data
+  },
+
+  // Database API methods
+  registerDatabase: async (databaseData: DatabaseRegisterRequest): Promise<Database> => {
+    const { data } = await apiClient.post('/databases/register', databaseData)
+    return data.data
+  },
+
+  deleteDatabase: async (databaseId: number): Promise<void> => {
+    await apiClient.delete(`/databases/delete/${databaseId}`)
+  },
+
+  updateDatabase: async (databaseId: number, databaseData: DatabaseUpdateRequest): Promise<Database> => {
+    const { data } = await apiClient.patch(`/databases/edit/${databaseId}`, databaseData)
     return data.data
   },
 }

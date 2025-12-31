@@ -77,12 +77,80 @@ export interface Container {
   updated_at?: string
 }
 
+export interface Database {
+  id?: number
+  server_id: number
+  name: string
+  db_type: string
+  host: string
+  port: number
+  database_name?: string
+  service_name?: string
+  username: string
+  password?: string
+  created_at?: string
+  updated_at?: string
+}
+
+export interface DatabaseHealth {
+  id?: number | null
+  database_id: number
+  status: 'healthy' | 'unhealthy' | 'offline' | 'error'
+  is_connected: boolean
+  connection_time_ms: number
+  query_time_ms: number
+  error_message: string | null
+  checked_at: string
+}
+
+export interface DatabaseWithHealth {
+  database: Database
+  database_health: DatabaseHealth
+}
+
 export interface ServerWithHealth {
   server: Server
   current_health: ServerHealth
   containers: Container[]
+  databases?: DatabaseWithHealth[]
+}
+
+export interface MonitoringData {
+  server: Server
+  current_health: ServerHealth
+  containers: Container[]
+  databases: DatabaseWithHealth[]
 }
 
 export interface ContainerDataRequest {
   server_id: number
+}
+
+export interface DatabaseRegisterRequest {
+  server_id: number
+  name: string
+  db_type: string
+  host: string
+  port: number
+  database_name?: string
+  service_name?: string
+  username: string
+  password: string
+}
+
+export interface DatabaseUpdateRequest {
+  name?: string
+  db_type?: string
+  host?: string
+  port?: number
+  database_name?: string
+  service_name?: string
+  username?: string
+  password?: string
+}
+
+export interface ServerDatabasesData {
+  server: Server
+  current_health: ServerHealth
+  databases: DatabaseWithHealth[]
 }
