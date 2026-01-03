@@ -12,6 +12,7 @@ import {
   Database as DatabaseIcon,
 } from 'lucide-vue-next'
 import { serversApi } from '@/api/servers'
+import { databasesApi } from '@/api/databases'
 import type { MonitoringData, ServerRegisterRequest, ServerUpdateRequest, Server, DatabaseRegisterRequest, DatabaseUpdateRequest, Database, ServerDatabasesData } from '@/types/api'
 import TabContainer from '@/components/tabs/TabContainer.vue'
 import ServersTab from '@/components/dashboard/ServersTab.vue'
@@ -110,7 +111,7 @@ const fetchDatabasesData = async () => {
   loadingDatabases.value = true
   error.value = ''
   try {
-    const response = await serversApi.getAllDatabases()
+    const response = await databasesApi.getAllDatabases()
     if (response?.data) {
       databasesData.value = Array.isArray(response.data) ? response.data : []
     }
@@ -255,7 +256,7 @@ const handleRegisterDatabase = async (formData: DatabaseRegisterRequest) => {
   registerDatabaseLoading.value = true
 
   try {
-    await serversApi.registerDatabase(formData)
+    await databasesApi.register(formData)
     showRegisterDatabaseModal.value = false
     registerDatabaseError.value = ''
     await fetchServersData()
@@ -268,7 +269,7 @@ const handleRegisterDatabase = async (formData: DatabaseRegisterRequest) => {
 
 const handleDeleteDatabase = async (databaseId: number) => {
   try {
-    await serversApi.deleteDatabase(databaseId)
+    await databasesApi.deleteDatabase(databaseId)
     await fetchServersData()
     databaseManagementTabRef.value?.closeDeleteDialog()
   } catch (err: any) {
@@ -296,7 +297,7 @@ const handleUpdateDatabase = async (formData: DatabaseUpdateRequest) => {
   editDatabaseLoading.value = true
 
   try {
-    await serversApi.updateDatabase(databaseToEdit.value.id!, formData)
+    await databasesApi.updateDatabase(databaseToEdit.value.id!, formData)
     showEditDatabaseModal.value = false
     editDatabaseError.value = ''
     databaseToEdit.value = null
@@ -307,6 +308,15 @@ const handleUpdateDatabase = async (formData: DatabaseUpdateRequest) => {
     editDatabaseLoading.value = false
   }
 }
+
+// Computed server list for dropdowns
+const serversList = computed(() => {
+  return monitoringData.value.map((data) => ({
+    id: data.server.id,
+    name: data.server.user_name,
+    ip_address: data.server.ip_address,
+  }))
+})
 
 // Computed stats
 const stats = computed(() => {
@@ -495,6 +505,7 @@ onMounted(() => {
       :loading="registerDatabaseLoading"
       :error="registerDatabaseError"
       :server-id="selectedServerId"
+      :servers="serversList"
       @close="showRegisterDatabaseModal = false"
       @submit="handleRegisterDatabase"
     />
@@ -505,6 +516,7 @@ onMounted(() => {
       :loading="editDatabaseLoading"
       :error="editDatabaseError"
       :database="databaseToEdit"
+      :servers="serversList"
       @close="showEditDatabaseModal = false"
       @submit="handleUpdateDatabase"
     />

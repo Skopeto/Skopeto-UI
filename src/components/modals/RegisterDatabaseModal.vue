@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import type { DatabaseRegisterRequest } from '@/types/api'
 
 const props = defineProps<{
   show: boolean
   loading: boolean
   error: string
-  serverId: number
+  serverId?: number
+  servers: Array<{ id: number; name: string; ip_address: string }>
 }>()
 
 const emit = defineEmits<{
@@ -15,7 +16,7 @@ const emit = defineEmits<{
 }>()
 
 const registerForm = ref<DatabaseRegisterRequest>({
-  server_id: props.serverId,
+  server_id: props.serverId || 0,
   name: '',
   db_type: 'postgresql',
   host: '',
@@ -26,15 +27,25 @@ const registerForm = ref<DatabaseRegisterRequest>({
   password: '',
 })
 
+// Watch for serverId changes to pre-select server
+watch(
+  () => props.serverId,
+  (newServerId) => {
+    if (newServerId) {
+      registerForm.value.server_id = newServerId
+    }
+  },
+  { immediate: true },
+)
+
 const handleSubmit = () => {
-  registerForm.value.server_id = props.serverId
   emit('submit', { ...registerForm.value })
 }
 
 const handleClose = () => {
   // Reset form
   registerForm.value = {
-    server_id: props.serverId,
+    server_id: props.serverId || 0,
     name: '',
     db_type: 'postgresql',
     host: '',
@@ -87,6 +98,24 @@ const handleDatabaseTypeChange = () => {
       <h2 class="text-xl font-bold text-gray-900 mb-4">Register New Database</h2>
 
       <form @submit.prevent="handleSubmit" class="space-y-3">
+        <!-- Server Selection -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">
+            Server
+            <span class="text-xs text-gray-500 font-normal ml-1">(select which server this database belongs to)</span>
+          </label>
+          <select
+            v-model.number="registerForm.server_id"
+            required
+            class="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="0" disabled>Select a server</option>
+            <option v-for="server in servers" :key="server.id" :value="server.id">
+              {{ server.name }} - {{ server.ip_address }}
+            </option>
+          </select>
+        </div>
+
         <!-- Display Name -->
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1.5">

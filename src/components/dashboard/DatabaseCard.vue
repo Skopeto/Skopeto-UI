@@ -62,6 +62,14 @@ const getDatabaseTypeColor = (type: string) => {
       return 'bg-purple-100 text-purple-700 border-purple-200'
   }
 }
+
+const formatDate = (dateStr: string) => {
+  try {
+    return new Date(dateStr).toLocaleString()
+  } catch {
+    return dateStr
+  }
+}
 </script>
 
 <template>
@@ -115,16 +123,27 @@ const getDatabaseTypeColor = (type: string) => {
     </div>
 
     <!-- Health Metrics -->
-    <div v-if="health" class="mb-4 space-y-2">
-      <div class="flex items-center justify-between text-sm">
+    <div v-if="health" class="mb-4 space-y-2 text-xs">
+      <div class="flex items-center justify-between">
         <span class="text-gray-600">Connection Status</span>
-        <span :class="health.connection_status ? 'text-green-600 font-medium' : 'text-red-600 font-medium'">
-          {{ health.connection_status ? 'Connected' : 'Disconnected' }}
+        <span :class="health.is_connected ? 'text-green-600 font-medium' : 'text-red-600 font-medium'">
+          {{ health.is_connected ? 'Connected' : 'Disconnected' }}
         </span>
       </div>
-      <div class="flex items-center justify-between text-sm">
-        <span class="text-gray-600">Response Time</span>
-        <span class="text-gray-900 font-medium">{{ health.response_time }}ms</span>
+      <div class="flex items-center justify-between">
+        <span class="text-gray-600">Connection Time</span>
+        <span class="text-gray-900 font-medium">{{ health.connection_time_ms.toFixed(2) }}ms</span>
+      </div>
+      <div class="flex items-center justify-between">
+        <span class="text-gray-600">Query Time</span>
+        <span class="text-gray-900 font-medium">{{ health.query_time_ms.toFixed(2) }}ms</span>
+      </div>
+      <div v-if="health.checked_at" class="flex items-center justify-between">
+        <span class="text-gray-600">Last Checked</span>
+        <span class="text-gray-900 font-medium">{{ formatDate(health.checked_at) }}</span>
+      </div>
+      <div v-if="health.error_message" class="pt-1 border-t border-gray-200">
+        <span class="text-red-600 font-medium">Error: {{ health.error_message }}</span>
       </div>
     </div>
 

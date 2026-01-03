@@ -7,6 +7,7 @@ const props = defineProps<{
   loading: boolean
   error: string
   database: Database | null
+  servers: Array<{ id: number; name: string; ip_address: string }>
 }>()
 
 const emit = defineEmits<{
@@ -15,6 +16,7 @@ const emit = defineEmits<{
 }>()
 
 const editForm = ref<DatabaseUpdateRequest>({
+  server_id: undefined,
   name: '',
   db_type: '',
   host: '',
@@ -31,6 +33,7 @@ watch(
   ([newDatabase, show]) => {
     if (newDatabase && show) {
       editForm.value = {
+        server_id: newDatabase.server_id || undefined,
         name: newDatabase.name || '',
         db_type: newDatabase.db_type || '',
         host: newDatabase.host || '',
@@ -46,28 +49,31 @@ watch(
 )
 
 const handleSubmit = () => {
-  // Only send fields that have changed (partial update via PATCH)
+  // Only send fields that have values (partial update)
   const updateData: DatabaseUpdateRequest = {}
 
-  if (editForm.value.name && editForm.value.name !== props.database?.name) {
+  if (editForm.value.server_id) {
+    updateData.server_id = editForm.value.server_id
+  }
+  if (editForm.value.name) {
     updateData.name = editForm.value.name
   }
-  if (editForm.value.db_type && editForm.value.db_type !== props.database?.db_type) {
+  if (editForm.value.db_type) {
     updateData.db_type = editForm.value.db_type
   }
-  if (editForm.value.host && editForm.value.host !== props.database?.host) {
+  if (editForm.value.host) {
     updateData.host = editForm.value.host
   }
-  if (editForm.value.port && editForm.value.port !== props.database?.port) {
+  if (editForm.value.port) {
     updateData.port = editForm.value.port
   }
-  if (editForm.value.database_name && editForm.value.database_name !== props.database?.database_name) {
+  if (editForm.value.database_name) {
     updateData.database_name = editForm.value.database_name
   }
-  if (editForm.value.service_name && editForm.value.service_name !== props.database?.service_name) {
+  if (editForm.value.service_name) {
     updateData.service_name = editForm.value.service_name
   }
-  if (editForm.value.username && editForm.value.username !== props.database?.username) {
+  if (editForm.value.username) {
     updateData.username = editForm.value.username
   }
   if (editForm.value.password) {
@@ -80,6 +86,7 @@ const handleSubmit = () => {
 const handleClose = () => {
   // Reset form
   editForm.value = {
+    server_id: undefined,
     name: '',
     db_type: '',
     host: '',
@@ -132,6 +139,24 @@ const handleDatabaseTypeChange = () => {
       <h2 class="text-xl font-bold text-gray-900 mb-4">Edit Database</h2>
 
       <form @submit.prevent="handleSubmit" class="space-y-3">
+        <!-- Server Selection -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">
+            Server
+            <span class="text-xs text-gray-500 font-normal ml-1">(select which server this database belongs to)</span>
+          </label>
+          <select
+            v-model.number="editForm.server_id"
+            required
+            class="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="" disabled>Select a server</option>
+            <option v-for="server in servers" :key="server.id" :value="server.id">
+              {{ server.name }} - {{ server.ip_address }}
+            </option>
+          </select>
+        </div>
+
         <!-- Display Name -->
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1.5">

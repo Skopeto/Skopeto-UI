@@ -139,6 +139,7 @@ export interface DatabaseRegisterRequest {
 }
 
 export interface DatabaseUpdateRequest {
+  server_id?: number
   name?: string
   db_type?: string
   host?: string
