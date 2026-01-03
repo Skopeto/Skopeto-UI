@@ -85,6 +85,7 @@ const getUserId = (): number => {
   }
 }
 
+// Initial load - get all data
 const fetchServersData = async () => {
   loading.value = true
   error.value = ''
@@ -107,6 +108,7 @@ const fetchServersData = async () => {
   }
 }
 
+// Fetch data for Servers & Databases tab specifically
 const fetchDatabasesData = async () => {
   loadingDatabases.value = true
   error.value = ''
@@ -122,6 +124,7 @@ const fetchDatabasesData = async () => {
   }
 }
 
+// Refresh all data (used by Refresh button)
 const refreshAll = async () => {
   loading.value = true
   error.value = ''
@@ -129,6 +132,13 @@ const refreshAll = async () => {
     const response = await serversApi.collectAll()
     if (response?.data) {
       monitoringData.value = Array.isArray(response.data) ? response.data : []
+
+      // Populate databasesData from monitoring data
+      databasesData.value = monitoringData.value.map((serverData) => ({
+        server: serverData.server,
+        current_health: serverData.current_health,
+        databases: serverData.databases || []
+      }))
     }
   } catch (err: any) {
     error.value = err.response?.data?.error || 'Failed to refresh server data'
@@ -144,11 +154,30 @@ const fetchServerContainers = async (serverId: number) => {
 
     const serverIndex = monitoringData.value.findIndex((s) => s.server?.id === serverId)
     if (serverIndex !== -1 && monitoringData.value[serverIndex] && response?.data) {
+      // Store existing databases before updating
+      const existingDatabases = monitoringData.value[serverIndex].databases || []
+
       monitoringData.value[serverIndex].server =
         response.data.server || monitoringData.value[serverIndex].server
       monitoringData.value[serverIndex].current_health = response.data.current_health || null
       monitoringData.value[serverIndex].containers = response.data.containers || []
-      monitoringData.value[serverIndex].databases = response.data.databases || []
+
+      // Only update databases if they're included in the response, otherwise preserve existing
+      if (response.data.databases !== undefined) {
+        monitoringData.value[serverIndex].databases = response.data.databases
+      } else {
+        monitoringData.value[serverIndex].databases = existingDatabases
+      }
+
+      // Also update databasesData for the same server
+      const dbIndex = databasesData.value.findIndex((s) => s.server?.id === serverId)
+      if (dbIndex !== -1) {
+        databasesData.value[dbIndex] = {
+          server: monitoringData.value[serverIndex].server,
+          current_health: monitoringData.value[serverIndex].current_health,
+          databases: monitoringData.value[serverIndex].databases || []
+        }
+      }
     }
   } catch (err) {
     // Silently fail - error handling can be added if needed
