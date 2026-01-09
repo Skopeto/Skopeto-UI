@@ -1,44 +1,35 @@
 import apiClient from './client'
-import type { ServerRegisterRequest, ServerUpdateRequest, Server } from '@/types/api'
+import type {
+  ServerRegisterRequest,
+  ServerUpdateRequest,
+  Server,
+  MonitoringData,
+} from '@/types/api'
 
 export const serversApi = {
   register: async (serverData: ServerRegisterRequest): Promise<Server> => {
-    const { data } = await apiClient.post('/servers/register', serverData)
+    const { data } = await apiClient.post('/servers', serverData)
     return data.data
   },
 
   deleteServer: async (serverId: number): Promise<void> => {
-    await apiClient.delete(`/servers/delete/${serverId}`)
+    await apiClient.delete(`/servers/${serverId}`)
   },
 
   updateServer: async (serverId: number, serverData: ServerUpdateRequest): Promise<Server> => {
-    const { data } = await apiClient.patch(`/servers/edit/${serverId}`, serverData)
+    const { data } = await apiClient.patch(`/servers/${serverId}`, serverData)
     return data.data
   },
 
-  // Data fetching methods
-
-  // Get all servers (no health/containers/databases)
-  getServers: async (): Promise<any> => {
-    const { data } = await apiClient.get('/servers/all-servers')
+  // Get single server with containers and health
+  getServerWithContainers: async (serverId: number): Promise<{ data: MonitoringData }> => {
+    const { data } = await apiClient.post(`/containers/${serverId}/collect`)
     return data
   },
 
-  // Get all servers with health + containers
-  getAllServersWithContainers: async (): Promise<any> => {
-    const { data } = await apiClient.get('/containers/all')
-    return data
-  },
-
-  // Get single server with containers
-  getServerWithContainers: async (serverId: number): Promise<any> => {
-    const { data } = await apiClient.post(`/containers/collect/${serverId}`)
-    return data
-  },
-
-  // Collect all (servers + health + containers + databases)
-  collectAll: async (): Promise<any> => {
-    const { data } = await apiClient.post('/monitoring/collect-all')
+  // Collect all monitoring data (servers + health + containers + databases)
+  collectAll: async (): Promise<{ data: MonitoringData[] }> => {
+    const { data } = await apiClient.post('/monitoring/collect')
     return data
   },
 }

@@ -10,17 +10,27 @@ import {
   RefreshCw,
   TrendingUp,
   Database as DatabaseIcon,
+  Bell,
 } from 'lucide-vue-next'
 import { serversApi } from '@/api/servers'
 import { databasesApi } from '@/api/databases'
-import type { MonitoringData, ServerRegisterRequest, ServerUpdateRequest, Server, DatabaseRegisterRequest, DatabaseUpdateRequest, Database, ServerDatabasesData } from '@/types/api'
+import type {
+  MonitoringData,
+  ServerRegisterRequest,
+  ServerUpdateRequest,
+  Server,
+  DatabaseRegisterRequest,
+  DatabaseUpdateRequest,
+  Database,
+  ServerDatabasesData,
+} from '@/types/api'
 import TabContainer from '@/components/tabs/TabContainer.vue'
 import ServersTab from '@/components/dashboard/ServersTab.vue'
 import ServerContainersTab from '@/components/dashboard/ServerContainersTab.vue'
 import ServerDatabasesTab from '@/components/dashboard/ServerDatabasesTab.vue'
 import ServerManagementTab from '@/components/dashboard/ServerManagementTab.vue'
 import DatabaseManagementTab from '@/components/dashboard/DatabaseManagementTab.vue'
-import DockerManagementTab from '@/components/dashboard/DockerManagementTab.vue'
+import NotificationSubscribersTab from '@/components/dashboard/NotificationSubscribersTab.vue'
 import RegisterServerModal from '@/components/modals/RegisterServerModal.vue'
 import EditServerModal from '@/components/modals/EditServerModal.vue'
 import RegisterDatabaseModal from '@/components/modals/RegisterDatabaseModal.vue'
@@ -63,7 +73,7 @@ const tabs = [
   { id: 'databases', label: 'Servers & Databases', icon: DatabaseIcon },
   { id: 'management', label: 'Manage Servers', icon: Settings },
   { id: 'manage-databases', label: 'Manage Databases', icon: DatabaseIcon },
-  { id: 'docker', label: 'Docker Management', icon: Box },
+  { id: 'notifications', label: 'Notification Subscribers', icon: Bell },
 ]
 
 const handleLogout = () => {
@@ -93,13 +103,6 @@ const fetchServersData = async () => {
     const response = await serversApi.collectAll()
     if (response?.data) {
       monitoringData.value = Array.isArray(response.data) ? response.data : []
-
-      // Populate databasesData from monitoring data
-      databasesData.value = monitoringData.value.map((serverData) => ({
-        server: serverData.server,
-        current_health: serverData.current_health,
-        databases: serverData.databases || []
-      }))
     }
   } catch (err: any) {
     error.value = err.response?.data?.error || 'Failed to fetch server data'
@@ -127,23 +130,25 @@ const fetchDatabasesData = async () => {
 // Refresh all data (used by Refresh button)
 const refreshAll = async () => {
   loading.value = true
+  loadingDatabases.value = true
   error.value = ''
   try {
-    const response = await serversApi.collectAll()
-    if (response?.data) {
-      monitoringData.value = Array.isArray(response.data) ? response.data : []
+    // Fetch servers/containers data
+    const serversResponse = await serversApi.collectAll()
+    if (serversResponse?.data) {
+      monitoringData.value = Array.isArray(serversResponse.data) ? serversResponse.data : []
+    }
 
-      // Populate databasesData from monitoring data
-      databasesData.value = monitoringData.value.map((serverData) => ({
-        server: serverData.server,
-        current_health: serverData.current_health,
-        databases: serverData.databases || []
-      }))
+    // Fetch databases data separately
+    const databasesResponse = await databasesApi.getAllDatabases()
+    if (databasesResponse?.data) {
+      databasesData.value = Array.isArray(databasesResponse.data) ? databasesResponse.data : []
     }
   } catch (err: any) {
-    error.value = err.response?.data?.error || 'Failed to refresh server data'
+    error.value = err.response?.data?.error || 'Failed to refresh data'
   } finally {
     loading.value = false
+    loadingDatabases.value = false
   }
 }
 
@@ -154,30 +159,12 @@ const fetchServerContainers = async (serverId: number) => {
 
     const serverIndex = monitoringData.value.findIndex((s) => s.server?.id === serverId)
     if (serverIndex !== -1 && monitoringData.value[serverIndex] && response?.data) {
-      // Store existing databases before updating
-      const existingDatabases = monitoringData.value[serverIndex].databases || []
-
       monitoringData.value[serverIndex].server =
         response.data.server || monitoringData.value[serverIndex].server
       monitoringData.value[serverIndex].current_health = response.data.current_health || null
       monitoringData.value[serverIndex].containers = response.data.containers || []
-
-      // Only update databases if they're included in the response, otherwise preserve existing
-      if (response.data.databases !== undefined) {
-        monitoringData.value[serverIndex].databases = response.data.databases
-      } else {
-        monitoringData.value[serverIndex].databases = existingDatabases
-      }
-
-      // Also update databasesData for the same server
-      const dbIndex = databasesData.value.findIndex((s) => s.server?.id === serverId)
-      if (dbIndex !== -1) {
-        databasesData.value[dbIndex] = {
-          server: monitoringData.value[serverIndex].server,
-          current_health: monitoringData.value[serverIndex].current_health,
-          databases: monitoringData.value[serverIndex].databases || []
-        }
-      }
+      // Databases are handled separately via databasesApi
+      monitoringData.value[serverIndex].databases = response.data.databases || []
     }
   } catch (err) {
     // Silently fail - error handling can be added if needed
@@ -199,14 +186,58 @@ const toggleServerExpand = async (serverId: number) => {
   }
 }
 
+const toggleServerDatabasesExpand = async (serverId: number) => {
+  if (expandedServers.value.has(serverId)) {
+    expandedServers.value.delete(serverId)
+  } else {
+    expandedServers.value.add(serverId)
+    // Fetch health and databases when expanding if not already loaded
+    const server = databasesData.value.find((s) => s.server?.id === serverId)
+    if (server && !server.current_health) {
+      loadingServers.value.add(serverId)
+      try {
+        const response = await databasesApi.getServerDatabases(serverId)
+        const dbIndex = databasesData.value.findIndex((s) => s.server?.id === serverId)
+        if (dbIndex !== -1 && response?.data && response.data[0]) {
+          databasesData.value[dbIndex] = {
+            server: response.data[0].server,
+            current_health: response.data[0].current_health,
+            databases: response.data[0].databases || [],
+          }
+        }
+      } catch (err) {
+        // Silently fail
+      } finally {
+        loadingServers.value.delete(serverId)
+      }
+    }
+  }
+}
+
 const refreshServer = async (serverId: number, event: Event) => {
   event.stopPropagation() // Prevent toggle when clicking refresh
   await fetchServerContainers(serverId)
 }
 
-const refreshServerDatabases = async (_serverId: number, event: Event) => {
+const refreshServerDatabases = async (serverId: number, event: Event) => {
   event.stopPropagation() // Prevent toggle when clicking refresh
-  await fetchDatabasesData()
+  loadingServers.value.add(serverId)
+  try {
+    const response = await databasesApi.getServerDatabases(serverId)
+
+    const dbIndex = databasesData.value.findIndex((s) => s.server?.id === serverId)
+    if (dbIndex !== -1 && response?.data && response.data[0]) {
+      databasesData.value[dbIndex] = {
+        server: response.data[0].server,
+        current_health: response.data[0].current_health,
+        databases: response.data[0].databases || [],
+      }
+    }
+  } catch (err) {
+    // Silently fail - error handling can be added if needed
+  } finally {
+    loadingServers.value.delete(serverId)
+  }
 }
 
 const handleRegisterServer = async (formData: ServerRegisterRequest) => {
@@ -288,7 +319,7 @@ const handleRegisterDatabase = async (formData: DatabaseRegisterRequest) => {
     await databasesApi.register(formData)
     showRegisterDatabaseModal.value = false
     registerDatabaseError.value = ''
-    await fetchServersData()
+    await fetchDatabasesData()
   } catch (err: any) {
     registerDatabaseError.value = err.response?.data?.error || 'Failed to register database'
   } finally {
@@ -299,7 +330,7 @@ const handleRegisterDatabase = async (formData: DatabaseRegisterRequest) => {
 const handleDeleteDatabase = async (databaseId: number) => {
   try {
     await databasesApi.deleteDatabase(databaseId)
-    await fetchServersData()
+    await fetchDatabasesData()
     databaseManagementTabRef.value?.closeDeleteDialog()
   } catch (err: any) {
     error.value = err.response?.data?.error || 'Failed to delete database'
@@ -307,8 +338,8 @@ const handleDeleteDatabase = async (databaseId: number) => {
 }
 
 const handleEditDatabase = (databaseId: number) => {
-  // Find the database in the monitoring data
-  for (const serverData of monitoringData.value) {
+  // Find the database in the databases data
+  for (const serverData of databasesData.value) {
     const dbData = serverData.databases?.find((d) => d.database.id === databaseId)
     if (dbData) {
       databaseToEdit.value = dbData.database
@@ -330,7 +361,7 @@ const handleUpdateDatabase = async (formData: DatabaseUpdateRequest) => {
     showEditDatabaseModal.value = false
     editDatabaseError.value = ''
     databaseToEdit.value = null
-    await fetchServersData()
+    await fetchDatabasesData()
   } catch (err: any) {
     editDatabaseError.value = err.response?.data?.error || 'Failed to update database'
   } finally {
@@ -351,7 +382,9 @@ const serversList = computed(() => {
 const stats = computed(() => {
   const total = monitoringData.value.length
   const healthy = monitoringData.value.filter((s) => s.current_health?.status === 'healthy').length
-  const unhealthy = monitoringData.value.filter((s) => s.current_health?.status === 'unhealthy').length
+  const unhealthy = monitoringData.value.filter(
+    (s) => s.current_health?.status === 'unhealthy',
+  ).length
 
   const avgUptime =
     total > 0
@@ -396,8 +429,8 @@ const stats = computed(() => {
   ]
 })
 
-onMounted(() => {
-  fetchServersData()
+onMounted(async () => {
+  await Promise.all([fetchServersData(), fetchDatabasesData()])
 })
 </script>
 
@@ -477,7 +510,7 @@ onMounted(() => {
             :loading="loadingDatabases"
             :loading-servers="loadingServers"
             :expanded-servers="expandedServers"
-            @toggle-expand="toggleServerExpand"
+            @toggle-expand="toggleServerDatabasesExpand"
             @refresh-server="refreshServerDatabases"
             @refresh-databases="fetchDatabasesData"
           />
@@ -503,8 +536,8 @@ onMounted(() => {
           />
         </template>
 
-        <template #docker>
-          <DockerManagementTab />
+        <template #notifications>
+          <NotificationSubscribersTab />
         </template>
       </TabContainer>
     </main>

@@ -25,6 +25,11 @@ export interface User {
   first_name: string
   last_name: string
   email: string
+  roles?: string[]
+  is_active?: boolean
+  is_superuser?: boolean
+  created_at?: string
+  updated_at?: string
 }
 
 export interface ServerRegisterRequest {
@@ -154,4 +159,35 @@ export interface ServerDatabasesData {
   server: Server
   current_health: ServerHealth
   databases: DatabaseWithHealth[]
+}
+
+export interface NotificationSubscriber {
+  id: number
+  user_id: number
+  user_name: string
+  first_name: string
+  last_name: string
+  delivery_address_email: string | null
+  notification_channel: 'email' | 'slack' | 'sms'
+  slack_webhook_url: string | null
+  is_active: boolean
+  subscribed_at: string
+}
+
+export interface RegisterNotificationSubscriberRequest {
+  user_id: number
+  user_name: string
+  first_name: string
+  last_name: string
+  delivery_address_email?: string | null
+  slack_webhook_url?: string | null
+  notification_channel: 'email' | 'slack' | 'sms'
+  subscribed_at?: string | null
+}
+
+export interface UpdateNotificationSubscriberRequest {
+  delivery_address_email?: string | null
+  slack_webhook_url?: string | null
+  notification_channel?: 'email' | 'slack' | 'sms' | null
+  is_active?: boolean | null
 }
