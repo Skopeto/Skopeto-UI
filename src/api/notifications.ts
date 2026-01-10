@@ -3,6 +3,7 @@ import type {
   NotificationSubscriber,
   RegisterNotificationSubscriberRequest,
   UpdateNotificationSubscriberRequest,
+  Notification,
 } from '@/types/api'
 
 export const notificationsApi = {
@@ -41,5 +42,10 @@ export const notificationsApi = {
 
   deleteNotification: async (notificationId: number): Promise<void> => {
     await apiClient.delete(`/notifications/${notificationId}`)
+  },
+
+  getUserNotifications: async (userId: number): Promise<Notification[]> => {
+    const { data } = await apiClient.get(`/notifications/user/${userId}`)
+    return data.data
   },
 }

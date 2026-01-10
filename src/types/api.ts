@@ -191,3 +191,12 @@ export interface UpdateNotificationSubscriberRequest {
   notification_channel?: 'email' | 'slack' | 'sms' | null
   is_active?: boolean | null
 }
+
+export interface Notification {
+  id: number
+  user_id: number
+  title: string
+  message: string
+  created_at: string
+  is_read: boolean
+}

@@ -84,6 +84,7 @@ defineExpose({
         :key="serverData.server?.id"
         :server="serverData.server!"
         :health="serverData.current_health"
+        :show-health="false"
         @delete="serverData.server?.id && handleDeleteClick(serverData.server.id)"
         @edit="serverData.server?.id && $emit('edit', serverData.server.id)"
       />

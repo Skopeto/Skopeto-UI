@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   Server as ServerIcon,
@@ -14,6 +14,7 @@ import {
 } from 'lucide-vue-next'
 import { serversApi } from '@/api/servers'
 import { databasesApi } from '@/api/databases'
+import { useNotificationsStore } from '@/stores/notifications'
 import type {
   MonitoringData,
   ServerRegisterRequest,
@@ -35,6 +36,8 @@ import RegisterServerModal from '@/components/modals/RegisterServerModal.vue'
 import EditServerModal from '@/components/modals/EditServerModal.vue'
 import RegisterDatabaseModal from '@/components/modals/RegisterDatabaseModal.vue'
 import EditDatabaseModal from '@/components/modals/EditDatabaseModal.vue'
+import NotificationBell from '@/components/notifications/NotificationBell.vue'
+import NotificationsDropdown from '@/components/notifications/NotificationsDropdown.vue'
 
 const router = useRouter()
 
@@ -66,6 +69,11 @@ const editDatabaseLoading = ref(false)
 const databaseToEdit = ref<Database | null>(null)
 const databaseManagementTabRef = ref<InstanceType<typeof DatabaseManagementTab> | null>(null)
 
+// Notifications state
+const notificationsStore = useNotificationsStore()
+const showNotificationsDropdown = ref(false)
+const notificationsRef = ref<HTMLDivElement | null>(null)
+
 // Tabs configuration
 const tabs = [
   { id: 'servers', label: 'Servers', icon: ServerIcon },
@@ -95,34 +103,41 @@ const getUserId = (): number => {
   }
 }
 
+// Notifications methods
+const toggleNotifications = () => {
+  showNotificationsDropdown.value = !showNotificationsDropdown.value
+}
+
+const handleNotificationClick = async (notificationId: number) => {
+  await notificationsStore.markAsRead(notificationId)
+}
+
+const handleClickOutside = (event: MouseEvent) => {
+  if (notificationsRef.value && !notificationsRef.value.contains(event.target as Node)) {
+    showNotificationsDropdown.value = false
+  }
+}
+
 // Initial load - get all data
 const fetchServersData = async () => {
   loading.value = true
+  loadingDatabases.value = true
   error.value = ''
   try {
     const response = await serversApi.collectAll()
     if (response?.data) {
       monitoringData.value = Array.isArray(response.data) ? response.data : []
+      // Populate databasesData from monitoringData to avoid redundant API call
+      databasesData.value = monitoringData.value.map(data => ({
+        server: data.server,
+        current_health: data.current_health,
+        databases: data.databases
+      }))
     }
   } catch (err: any) {
     error.value = err.response?.data?.error || 'Failed to fetch server data'
   } finally {
     loading.value = false
-  }
-}
-
-// Fetch data for Servers & Databases tab specifically
-const fetchDatabasesData = async () => {
-  loadingDatabases.value = true
-  error.value = ''
-  try {
-    const response = await databasesApi.getAllDatabases()
-    if (response?.data) {
-      databasesData.value = Array.isArray(response.data) ? response.data : []
-    }
-  } catch (err: any) {
-    error.value = err.response?.data?.error || 'Failed to fetch databases data'
-  } finally {
     loadingDatabases.value = false
   }
 }
@@ -133,16 +148,16 @@ const refreshAll = async () => {
   loadingDatabases.value = true
   error.value = ''
   try {
-    // Fetch servers/containers data
+    // Fetch all monitoring data (includes servers, containers, and databases)
     const serversResponse = await serversApi.collectAll()
     if (serversResponse?.data) {
       monitoringData.value = Array.isArray(serversResponse.data) ? serversResponse.data : []
-    }
-
-    // Fetch databases data separately
-    const databasesResponse = await databasesApi.getAllDatabases()
-    if (databasesResponse?.data) {
-      databasesData.value = Array.isArray(databasesResponse.data) ? databasesResponse.data : []
+      // Populate databasesData from monitoringData to avoid redundant API call
+      databasesData.value = monitoringData.value.map(data => ({
+        server: data.server,
+        current_health: data.current_health,
+        databases: data.databases
+      }))
     }
   } catch (err: any) {
     error.value = err.response?.data?.error || 'Failed to refresh data'
@@ -163,8 +178,7 @@ const fetchServerContainers = async (serverId: number) => {
         response.data.server || monitoringData.value[serverIndex].server
       monitoringData.value[serverIndex].current_health = response.data.current_health || null
       monitoringData.value[serverIndex].containers = response.data.containers || []
-      // Databases are handled separately via databasesApi
-      monitoringData.value[serverIndex].databases = response.data.databases || []
+      // Databases are handled separately via databasesApi - don't overwrite them here
     }
   } catch (err) {
     // Silently fail - error handling can be added if needed
@@ -430,7 +444,19 @@ const stats = computed(() => {
 })
 
 onMounted(async () => {
-  await Promise.all([fetchServersData(), fetchDatabasesData()])
+  const userId = getUserId()
+
+  await Promise.all([
+    fetchServersData(), // This now populates both monitoringData and databasesData
+    notificationsStore.fetchNotifications(userId),
+  ])
+
+  // Add click outside listener
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
 })
 </script>
 
@@ -460,6 +486,22 @@ onMounted(async () => {
               <RefreshCw :class="['w-5 h-5', loading && 'animate-spin']" />
               <span class="font-medium">Refresh</span>
             </button>
+
+            <!-- Notifications -->
+            <div ref="notificationsRef" class="relative">
+              <NotificationBell
+                :unread-count="notificationsStore.unreadCount"
+                :has-unread="notificationsStore.hasUnread"
+                @click="toggleNotifications"
+              />
+              <NotificationsDropdown
+                :show="showNotificationsDropdown"
+                :notifications="notificationsStore.notifications"
+                :loading="notificationsStore.loading"
+                @notification-click="handleNotificationClick"
+              />
+            </div>
+
             <button
               @click="handleLogout"
               class="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 border border-transparent hover:border-red-200"

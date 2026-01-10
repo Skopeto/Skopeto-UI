@@ -153,6 +153,7 @@ defineExpose({
               :database="dbData.database"
               :health="dbData.database_health"
               :server="serverData.server!"
+              :show-health="false"
               @delete="dbData.database.id && handleDeleteClick(dbData.database.id)"
               @edit="dbData.database.id && $emit('edit', dbData.database.id)"
             />

@@ -2,11 +2,14 @@
 import { Trash2, Edit, Database, CheckCircle2, AlertTriangle, XCircle, Clock, Server } from 'lucide-vue-next'
 import type { Database as DatabaseType, DatabaseHealth, Server as ServerType } from '@/types/api'
 
-defineProps<{
+withDefaults(defineProps<{
   database: DatabaseType
   health: DatabaseHealth | null
   server: ServerType
-}>()
+  showHealth?: boolean
+}>(), {
+  showHealth: true
+})
 
 defineEmits<{
   delete: []
@@ -91,7 +94,7 @@ const formatDate = (dateStr: string) => {
         </p>
       </div>
       <div
-        v-if="health"
+        v-if="showHealth && health"
         :class="[
           'inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-md border text-xs font-medium',
           getStatusColor(health.status),
@@ -101,7 +104,7 @@ const formatDate = (dateStr: string) => {
         <span class="capitalize">{{ health.status }}</span>
       </div>
       <div
-        v-else
+        v-else-if="showHealth"
         class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-md border text-xs font-medium text-gray-600 bg-gray-50 border-gray-200"
       >
         <Clock class="w-3.5 h-3.5" />
@@ -123,7 +126,7 @@ const formatDate = (dateStr: string) => {
     </div>
 
     <!-- Health Metrics -->
-    <div v-if="health" class="mb-4 space-y-2 text-xs">
+    <div v-if="showHealth && health" class="mb-4 space-y-2 text-xs">
       <div class="flex items-center justify-between">
         <span class="text-gray-600">Connection Status</span>
         <span :class="health.is_connected ? 'text-green-600 font-medium' : 'text-red-600 font-medium'">
@@ -148,7 +151,7 @@ const formatDate = (dateStr: string) => {
     </div>
 
     <!-- No Health Data -->
-    <div v-else class="mb-4 text-center text-sm text-gray-500 py-2">No health data available</div>
+    <div v-else-if="showHealth" class="mb-4 text-center text-sm text-gray-500 py-2">No health data available</div>
 
     <!-- Actions -->
     <div class="flex space-x-2 pt-2 border-t border-gray-100">
