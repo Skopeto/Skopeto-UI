@@ -9,6 +9,7 @@ import {
   Clock,
   RefreshCw,
   Server,
+  Terminal,
 } from 'lucide-vue-next'
 import StatsGrid from './StatsGrid.vue'
 import type { MonitoringData } from '@/types/api'
@@ -31,6 +32,7 @@ defineProps<{
 
 defineEmits<{
   'refresh-server': [serverId: number, event: Event]
+  'open-terminal': [serverId: number, serverName: string]
 }>()
 
 const getStatusColor = (status: string) => {
@@ -259,13 +261,21 @@ const formatDate = (dateStr: string) => {
                 </div>
               </div>
 
-              <!-- Right: Refresh Button -->
-              <div class="flex items-center space-x-3">
+              <!-- Right: Actions -->
+              <div class="flex items-center space-x-2">
+                <button
+                  v-if="serverData.server?.id"
+                  @click="$emit('open-terminal', serverData.server.id, `${serverData.server.ip_address}:${serverData.server.port}`)"
+                  class="p-1.5 text-gray-800 hover:text-black bg-white hover:bg-gray-50 border border-gray-300 rounded-lg shadow-sm hover:shadow transition-all duration-200 active:shadow-none active:translate-y-px"
+                  title="Open terminal"
+                >
+                  <Terminal class="w-4 h-4" />
+                </button>
                 <button
                   v-if="serverData.server?.id"
                   @click="$emit('refresh-server', serverData.server.id, $event)"
                   :disabled="loadingServers.has(serverData.server.id)"
-                  class="p-1.5 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all duration-200 disabled:opacity-50"
+                  class="p-1.5 text-gray-800 hover:text-black bg-white hover:bg-gray-50 border border-gray-300 rounded-lg shadow-sm hover:shadow transition-all duration-200 active:shadow-none active:translate-y-px disabled:opacity-50"
                   title="Refresh server data"
                 >
                   <RefreshCw

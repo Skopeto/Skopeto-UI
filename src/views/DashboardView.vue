@@ -38,6 +38,7 @@ import RegisterDatabaseModal from '@/components/modals/RegisterDatabaseModal.vue
 import EditDatabaseModal from '@/components/modals/EditDatabaseModal.vue'
 import NotificationBell from '@/components/notifications/NotificationBell.vue'
 import NotificationsDropdown from '@/components/notifications/NotificationsDropdown.vue'
+import TerminalModal from '@/components/dashboard/TerminalModal.vue'
 
 const router = useRouter()
 
@@ -73,6 +74,11 @@ const databaseManagementTabRef = ref<InstanceType<typeof DatabaseManagementTab> 
 const notificationsStore = useNotificationsStore()
 const showNotificationsDropdown = ref(false)
 const notificationsRef = ref<HTMLDivElement | null>(null)
+
+// Terminal state
+const showTerminalModal = ref(false)
+const terminalServerId = ref<number | null>(null)
+const terminalServerName = ref('')
 
 // Tabs configuration
 const tabs = [
@@ -116,6 +122,19 @@ const handleClickOutside = (event: MouseEvent) => {
   if (notificationsRef.value && !notificationsRef.value.contains(event.target as Node)) {
     showNotificationsDropdown.value = false
   }
+}
+
+// Terminal handlers
+const handleOpenTerminal = (serverId: number, serverName: string) => {
+  terminalServerId.value = serverId
+  terminalServerName.value = serverName
+  showTerminalModal.value = true
+}
+
+const handleCloseTerminal = () => {
+  showTerminalModal.value = false
+  terminalServerId.value = null
+  terminalServerName.value = ''
 }
 
 // Initial load - get all data
@@ -530,6 +549,7 @@ onUnmounted(() => {
             :loading="loading"
             :loading-servers="loadingServers"
             @refresh-server="refreshServer"
+            @open-terminal="handleOpenTerminal"
           />
         </template>
 
@@ -623,6 +643,14 @@ onUnmounted(() => {
       :servers="serversList"
       @close="showEditDatabaseModal = false"
       @submit="handleUpdateDatabase"
+    />
+
+    <!-- Terminal Modal -->
+    <TerminalModal
+      :server-id="terminalServerId"
+      :server-name="terminalServerName"
+      :is-open="showTerminalModal"
+      @close="handleCloseTerminal"
     />
   </div>
 </template>

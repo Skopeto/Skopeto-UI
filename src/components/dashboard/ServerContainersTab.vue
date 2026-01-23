@@ -286,7 +286,7 @@ const getContainerStatusColor = (status: string) => {
                   v-if="serverData.server?.id"
                   @click="$emit('refresh-server', serverData.server.id, $event)"
                   :disabled="loadingServers.has(serverData.server.id)"
-                  class="p-1.5 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all duration-200 disabled:opacity-50"
+                  class="p-1.5 text-gray-800 hover:text-black bg-white hover:bg-gray-50 border border-gray-300 rounded-lg shadow-sm hover:shadow transition-all duration-200 active:shadow-none active:translate-y-px disabled:opacity-50"
                   title="Refresh server containers"
                 >
                   <RefreshCw
