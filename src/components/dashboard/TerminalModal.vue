@@ -22,6 +22,7 @@ let websocket: WebSocket | null = null
 
 const connectionStatus = ref<'connecting' | 'connected' | 'disconnected' | 'error'>('disconnected')
 const errorMessage = ref('')
+const shouldClose = ref(false)
 
 const initTerminal = () => {
   if (!terminalRef.value) return
@@ -113,11 +114,11 @@ const connectWebSocket = () => {
     terminal?.writeln('\r\n\x1b[31mConnection error occurred.\x1b[0m')
   }
 
-  websocket.onclose = (event) => {
+  websocket.onclose = () => {
     connectionStatus.value = 'disconnected'
-    if (event.code !== 1000) {
-      terminal?.writeln(`\r\n\x1b[33mConnection closed (code: ${event.code}).\x1b[0m`)
-    }
+    websocket = null
+    // Always signal to close modal when connection drops
+    shouldClose.value = true
   }
 }
 
@@ -161,6 +162,7 @@ watch(
   () => props.isOpen,
   async (isOpen) => {
     if (isOpen && props.serverId) {
+      shouldClose.value = false
       await nextTick()
       initTerminal()
       connectWebSocket()
@@ -171,6 +173,14 @@ watch(
     }
   },
 )
+
+// Watch for shouldClose flag to close modal when connection drops
+watch(shouldClose, (close) => {
+  if (close && props.isOpen) {
+    cleanup()
+    emit('close')
+  }
+})
 
 onMounted(() => {
   if (props.isOpen && props.serverId) {
