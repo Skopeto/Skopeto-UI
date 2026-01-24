@@ -12,6 +12,7 @@ import {
   ChevronDown,
   ChevronUp,
   Server,
+  Terminal,
 } from 'lucide-vue-next'
 import StatsGrid from './StatsGrid.vue'
 import type { MonitoringData } from '@/types/api'
@@ -36,6 +37,7 @@ defineProps<{
 defineEmits<{
   'toggle-expand': [serverId: number]
   'refresh-server': [serverId: number, event: Event]
+  'open-terminal': [serverId: number, serverName: string]
 }>()
 
 const getStatusColor = (status: string) => {
@@ -277,7 +279,7 @@ const getContainerStatusColor = (status: string) => {
                 </div>
               </div>
 
-              <!-- Right: Expand Button & Container Count -->
+              <!-- Right: Actions & Container Count -->
               <div class="flex items-center space-x-3">
                 <div class="flex items-center space-x-2 text-sm text-gray-600">
                   <Box class="w-4 h-4" />
@@ -285,7 +287,15 @@ const getContainerStatusColor = (status: string) => {
                 </div>
                 <button
                   v-if="serverData.server?.id"
-                  @click="$emit('refresh-server', serverData.server.id, $event)"
+                  @click.stop="$emit('open-terminal', serverData.server.id, `${serverData.server.ip_address}:${serverData.server.port}`)"
+                  class="p-1.5 text-gray-800 hover:text-black bg-white hover:bg-gray-50 border border-gray-300 rounded-lg shadow-sm hover:shadow transition-all duration-200 active:shadow-none active:translate-y-px"
+                  title="Open terminal"
+                >
+                  <Terminal class="w-4 h-4" />
+                </button>
+                <button
+                  v-if="serverData.server?.id"
+                  @click.stop="$emit('refresh-server', serverData.server.id, $event)"
                   :disabled="loadingServers.has(serverData.server.id)"
                   class="p-1.5 text-gray-800 hover:text-black bg-white hover:bg-gray-50 border border-gray-300 rounded-lg shadow-sm hover:shadow transition-all duration-200 active:shadow-none active:translate-y-px disabled:opacity-50"
                   title="Refresh server containers"

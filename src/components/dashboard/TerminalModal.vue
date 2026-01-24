@@ -203,7 +203,6 @@ onUnmounted(() => {
     <div
       v-if="isOpen"
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-      @click.self="handleClose"
     >
       <div
         class="bg-gray-900 rounded-xl shadow-2xl w-[90vw] h-[80vh] max-w-6xl flex flex-col overflow-hidden"

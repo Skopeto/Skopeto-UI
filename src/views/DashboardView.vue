@@ -565,6 +565,7 @@ onUnmounted(() => {
             :expanded-servers="expandedServers"
             @toggle-expand="toggleServerExpand"
             @refresh-server="refreshServer"
+            @open-terminal="handleOpenTerminal"
           />
         </template>
 
@@ -577,7 +578,8 @@ onUnmounted(() => {
             :expanded-servers="expandedServers"
             @toggle-expand="toggleServerDatabasesExpand"
             @refresh-server="refreshServerDatabases"
-            @refresh-databases="fetchDatabasesData"
+            @refresh-databases="fetchServersData"
+            @open-terminal="handleOpenTerminal"
           />
         </template>
 
