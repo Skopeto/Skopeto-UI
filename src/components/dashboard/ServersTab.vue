@@ -71,10 +71,48 @@ const getUsageColor = (usage: number) => {
 
 const formatDate = (dateStr: string) => {
   try {
-    return new Date(dateStr).toLocaleString()
+    const date = new Date(dateStr)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffMins = Math.floor(diffMs / (1000 * 60))
+
+    if (diffMins < 60) return `${diffMins}m ago`
+    const diffHours = Math.floor(diffMins / 60)
+    if (diffHours < 24) return `${diffHours}h ago`
+    const diffDays = Math.floor(diffHours / 24)
+    return `${diffDays}d ago`
   } catch {
     return dateStr
   }
+}
+
+const formatUptime = (uptime: string) => {
+  if (!uptime || uptime === 'N/A') return 'N/A'
+
+  // Parse "up 5 weeks, 2 days, 4 hours, 39 minutes" format
+  const match = uptime.match(/up\s+(.+)/)
+  if (!match) return uptime
+
+  const parts = match[1].split(',').map(s => s.trim())
+  let result = ''
+
+  for (const part of parts) {
+    if (part.includes('week')) {
+      const weeks = part.match(/(\d+)\s*week/)?.[1]
+      if (weeks) result += `${weeks}w `
+    } else if (part.includes('day')) {
+      const days = part.match(/(\d+)\s*day/)?.[1]
+      if (days) result += `${days}d `
+    } else if (part.includes('hour')) {
+      const hours = part.match(/(\d+)\s*hour/)?.[1]
+      if (hours) result += `${hours}h `
+    } else if (part.includes('minute')) {
+      const minutes = part.match(/(\d+)\s*minute/)?.[1]
+      if (minutes && !result.includes('w') && !result.includes('d')) result += `${minutes}m`
+    }
+  }
+
+  return result.trim() || uptime
 }
 </script>
 
@@ -154,9 +192,7 @@ const formatDate = (dateStr: string) => {
                       class="flex items-center space-x-1"
                     >
                       <Clock class="w-3.5 h-3.5" />
-                      <span
-                        >Last snapshot at {{ formatDate(serverData.current_health.checked_at) }}</span
-                      >
+                      <span>{{ formatDate(serverData.current_health.checked_at) }}</span>
                     </span>
                     <span v-else class="text-gray-400">No health check yet</span>
                   </div>
@@ -255,7 +291,7 @@ const formatDate = (dateStr: string) => {
                   <div>
                     <div class="text-xs font-medium text-gray-600 mb-0.5">Uptime</div>
                     <div class="text-xs font-semibold text-gray-900">
-                      {{ serverData.current_health?.uptime || 'N/A' }}
+                      {{ formatUptime(serverData.current_health?.uptime || 'N/A') }}
                     </div>
                   </div>
                 </div>
