@@ -288,20 +288,20 @@ const getContainerStatusColor = (status: string) => {
                 <button
                   v-if="serverData.server?.id"
                   @click.stop="$emit('open-terminal', serverData.server.id, `${serverData.server.ip_address}:${serverData.server.port}`)"
-                  class="p-1.5 text-gray-800 hover:text-black bg-white hover:bg-gray-50 border border-gray-300 rounded-lg shadow-sm hover:shadow transition-all duration-200 active:shadow-none active:translate-y-px"
+                  class="p-2 text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 hover:border-emerald-300 rounded-lg shadow-sm hover:shadow transition-all duration-200 active:shadow-none active:translate-y-px"
                   title="Open terminal"
                 >
-                  <Terminal class="w-4 h-4" />
+                  <Terminal class="w-5 h-5" />
                 </button>
                 <button
                   v-if="serverData.server?.id"
                   @click.stop="$emit('refresh-server', serverData.server.id, $event)"
                   :disabled="loadingServers.has(serverData.server.id)"
-                  class="p-1.5 text-gray-800 hover:text-black bg-white hover:bg-gray-50 border border-gray-300 rounded-lg shadow-sm hover:shadow transition-all duration-200 active:shadow-none active:translate-y-px disabled:opacity-50"
+                  class="p-2 text-blue-700 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 border border-blue-200 hover:border-blue-300 rounded-lg shadow-sm hover:shadow transition-all duration-200 active:shadow-none active:translate-y-px disabled:opacity-50"
                   title="Refresh server containers"
                 >
                   <RefreshCw
-                    :class="['w-4 h-4', loadingServers.has(serverData.server.id) && 'animate-spin']"
+                    :class="['w-5 h-5', loadingServers.has(serverData.server.id) && 'animate-spin']"
                   />
                 </button>
                 <ChevronDown
