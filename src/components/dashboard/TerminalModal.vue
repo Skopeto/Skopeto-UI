@@ -30,16 +30,33 @@ const initTerminal = () => {
   terminal = new Terminal({
     cursorBlink: true,
     fontSize: 14,
-    fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+    fontFamily: 'JetBrains Mono, Fira Code, Menlo, Monaco, "Courier New", monospace',
     theme: {
-      background: '#1e1e1e',
-      foreground: '#d4d4d4',
-      cursor: '#d4d4d4',
-      cursorAccent: '#1e1e1e',
+      background: '#0d1117',
+      foreground: '#f0f6fc',
+      cursor: '#58a6ff',
+      cursorAccent: '#0d1117',
       selectionBackground: '#264f78',
+      black: '#484f58',
+      red: '#ff7b72',
+      green: '#3fb950',
+      yellow: '#d29922',
+      blue: '#58a6ff',
+      magenta: '#bc8cff',
+      cyan: '#39c5cf',
+      white: '#b1bac4',
+      brightBlack: '#6e7681',
+      brightRed: '#ffa198',
+      brightGreen: '#56d364',
+      brightYellow: '#e3b341',
+      brightBlue: '#79c0ff',
+      brightMagenta: '#d2a8ff',
+      brightCyan: '#56d4dd',
+      brightWhite: '#f0f6fc',
     },
     scrollback: 10000,
     convertEol: false,
+    allowProposedApi: true,
   })
 
   fitAddon = new FitAddon()
@@ -148,7 +165,7 @@ const handleClose = () => {
 const handleResize = () => {
   if (fitAddon && terminal) {
     setTimeout(() => {
-      fitAddon.fit()
+      fitAddon?.fit()
       sendResize()
     }, 0)
   }
@@ -200,15 +217,23 @@ onUnmounted(() => {
 
 <template>
   <Teleport to="body">
-    <div
-      v-if="isOpen"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+    <Transition
+      enter-active-class="duration-300 ease-out"
+      enter-from-class="opacity-0 scale-95"
+      enter-to-class="opacity-100 scale-100"
+      leave-active-class="duration-200 ease-in"
+      leave-from-class="opacity-100 scale-100"
+      leave-to-class="opacity-0 scale-95"
     >
       <div
-        class="bg-gray-900 rounded-xl shadow-2xl w-[90vw] h-[80vh] max-w-6xl flex flex-col overflow-hidden"
+        v-if="isOpen"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-lg"
       >
         <div
-          class="flex items-center justify-between px-4 py-3 bg-gray-800 border-b border-gray-700 shrink-0"
+          class="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl shadow-2xl border border-gray-700/50 w-[90vw] h-[80vh] max-w-6xl flex flex-col overflow-hidden"
+        >
+        <div
+          class="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-gray-800/80 to-gray-700/80 border-b border-gray-600/50 backdrop-blur-sm shrink-0"
         >
           <div class="flex items-center space-x-3">
             <div class="flex space-x-2">
@@ -216,22 +241,33 @@ onUnmounted(() => {
               <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
               <div class="w-3 h-3 rounded-full bg-green-500"></div>
             </div>
-            <span class="text-gray-300 text-sm font-medium"> Terminal - {{ serverName }} </span>
-            <span
-              :class="[
-                'text-xs px-2 py-0.5 rounded-full',
-                connectionStatus === 'connected' && 'bg-green-500/20 text-green-400',
-                connectionStatus === 'connecting' && 'bg-yellow-500/20 text-yellow-400',
-                connectionStatus === 'disconnected' && 'bg-gray-500/20 text-gray-400',
-                connectionStatus === 'error' && 'bg-red-500/20 text-red-400',
-              ]"
-            >
-              {{ connectionStatus }}
-            </span>
+            <span class="text-gray-100 text-sm font-semibold tracking-wide"> Terminal - {{ serverName }} </span>
+            <div class="flex items-center space-x-2">
+              <div
+                :class="[
+                  'w-2 h-2 rounded-full transition-all duration-300',
+                  connectionStatus === 'connected' && 'bg-green-400 shadow-lg shadow-green-400/50',
+                  connectionStatus === 'connecting' && 'bg-yellow-400 shadow-lg shadow-yellow-400/50 animate-pulse',
+                  connectionStatus === 'disconnected' && 'bg-gray-400 shadow-lg shadow-gray-400/30',
+                  connectionStatus === 'error' && 'bg-red-400 shadow-lg shadow-red-400/50 animate-pulse',
+                ]"
+              ></div>
+              <span
+                :class="[
+                  'text-xs font-medium px-3 py-1 rounded-full border transition-all duration-300',
+                  connectionStatus === 'connected' && 'bg-green-500/10 text-green-300 border-green-500/30',
+                  connectionStatus === 'connecting' && 'bg-yellow-500/10 text-yellow-300 border-yellow-500/30',
+                  connectionStatus === 'disconnected' && 'bg-gray-500/10 text-gray-300 border-gray-500/30',
+                  connectionStatus === 'error' && 'bg-red-500/10 text-red-300 border-red-500/30',
+                ]"
+              >
+                {{ connectionStatus }}
+              </span>
+            </div>
           </div>
           <button
             @click="handleClose"
-            class="text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-gray-700"
+            class="text-gray-400 hover:text-white transition-all duration-200 p-2 rounded-lg hover:bg-gray-700/50 hover:scale-105"
           >
             <X class="w-5 h-5" />
           </button>
@@ -239,14 +275,15 @@ onUnmounted(() => {
 
         <div
           ref="terminalRef"
-          class="flex-1 bg-[#1e1e1e] cursor-text overflow-hidden"
+          class="flex-1 bg-gradient-to-br from-[#0d1117] to-[#161b22] cursor-text overflow-hidden border-x border-gray-600/30"
           @click="handleTerminalClick"
         ></div>
 
-        <div v-if="errorMessage" class="px-4 py-2 bg-red-900/50 border-t border-red-800 shrink-0">
+        <div v-if="errorMessage" class="px-6 py-3 bg-gradient-to-r from-red-900/40 to-red-800/40 border-t border-red-700/50 backdrop-blur-sm shrink-0">
           <p class="text-red-300 text-sm">{{ errorMessage }}</p>
         </div>
       </div>
-    </div>
+      </div>
+    </Transition>
   </Teleport>
 </template>
