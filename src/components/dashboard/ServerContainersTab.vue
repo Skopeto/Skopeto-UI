@@ -181,7 +181,8 @@ const getContainerStatusColor = (status: string) => {
                     >
                       <Clock class="w-3.5 h-3.5" />
                       <span
-                        >Last snapshot at {{ formatDate(serverData.current_health.checked_at) }}</span
+                        >Last snapshot at
+                        {{ formatDate(serverData.current_health.checked_at) }}</span
                       >
                     </span>
                     <span v-else class="text-gray-400">No health check yet</span>

@@ -11,6 +11,7 @@ import {
   TrendingUp,
   Database as DatabaseIcon,
   Bell,
+  Sliders,
 } from 'lucide-vue-next'
 import { serversApi } from '@/api/servers'
 import { databasesApi } from '@/api/databases'
@@ -32,6 +33,7 @@ import ServerDatabasesTab from '@/components/dashboard/ServerDatabasesTab.vue'
 import ServerManagementTab from '@/components/dashboard/ServerManagementTab.vue'
 import DatabaseManagementTab from '@/components/dashboard/DatabaseManagementTab.vue'
 import NotificationSubscribersTab from '@/components/dashboard/NotificationSubscribersTab.vue'
+import SchedulerTab from '@/components/dashboard/SchedulerTab.vue'
 import RegisterServerModal from '@/components/modals/RegisterServerModal.vue'
 import EditServerModal from '@/components/modals/EditServerModal.vue'
 import RegisterDatabaseModal from '@/components/modals/RegisterDatabaseModal.vue'
@@ -88,6 +90,7 @@ const tabs = [
   { id: 'management', label: 'Manage Servers', icon: Settings },
   { id: 'manage-databases', label: 'Manage Databases', icon: DatabaseIcon },
   { id: 'notifications', label: 'Notification Subscribers', icon: Bell },
+  { id: 'scheduler', label: 'Scheduler', icon: Sliders },
 ]
 
 const handleLogout = () => {
@@ -600,6 +603,10 @@ onUnmounted(() => {
 
         <template #notifications>
           <NotificationSubscribersTab />
+        </template>
+
+        <template #scheduler>
+          <SchedulerTab />
         </template>
       </TabContainer>
     </main>
