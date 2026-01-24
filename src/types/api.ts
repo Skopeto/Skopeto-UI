@@ -32,6 +32,17 @@ export interface User {
   updated_at?: string
 }
 
+export interface UpdateUserRequest {
+  first_name?: string | null
+  last_name?: string | null
+  user_name?: string | null
+  email?: string | null
+  is_active?: boolean | null
+  roles?: string[] | null
+  current_password?: string | null
+  new_password?: string | null
+}
+
 export interface ServerRegisterRequest {
   registrator_id: number
   name: string

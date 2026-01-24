@@ -10,8 +10,6 @@ import {
   RefreshCw,
   TrendingUp,
   Database as DatabaseIcon,
-  Bell,
-  Sliders,
 } from 'lucide-vue-next'
 import { serversApi } from '@/api/servers'
 import { databasesApi } from '@/api/databases'
@@ -32,8 +30,7 @@ import ServerContainersTab from '@/components/dashboard/ServerContainersTab.vue'
 import ServerDatabasesTab from '@/components/dashboard/ServerDatabasesTab.vue'
 import ServerManagementTab from '@/components/dashboard/ServerManagementTab.vue'
 import DatabaseManagementTab from '@/components/dashboard/DatabaseManagementTab.vue'
-import NotificationSubscribersTab from '@/components/dashboard/NotificationSubscribersTab.vue'
-import SchedulerTab from '@/components/dashboard/SchedulerTab.vue'
+import SettingsModal from '@/components/modals/SettingsModal.vue'
 import RegisterServerModal from '@/components/modals/RegisterServerModal.vue'
 import EditServerModal from '@/components/modals/EditServerModal.vue'
 import RegisterDatabaseModal from '@/components/modals/RegisterDatabaseModal.vue'
@@ -82,6 +79,9 @@ const showTerminalModal = ref(false)
 const terminalServerId = ref<number | null>(null)
 const terminalServerName = ref('')
 
+// Settings modal state
+const showSettingsModal = ref(false)
+
 // Tabs configuration
 const tabs = [
   { id: 'servers', label: 'Servers', icon: ServerIcon },
@@ -89,8 +89,6 @@ const tabs = [
   { id: 'databases', label: 'Servers & Databases', icon: DatabaseIcon },
   { id: 'management', label: 'Manage Servers', icon: Settings },
   { id: 'manage-databases', label: 'Manage Databases', icon: DatabaseIcon },
-  { id: 'notifications', label: 'Notification Subscribers', icon: Bell },
-  { id: 'scheduler', label: 'Scheduler', icon: Sliders },
 ]
 
 const handleLogout = () => {
@@ -503,7 +501,7 @@ onUnmounted(() => {
             <button
               @click="refreshAll"
               :disabled="loading"
-              class="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              class="flex items-center space-x-2 px-4 py-2 text-green-700 hover:text-green-800 bg-green-50 hover:bg-green-100 border border-green-200 hover:border-green-300 rounded-lg transition-all duration-200 shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <RefreshCw :class="['w-5 h-5', loading && 'animate-spin']" />
               <span class="font-medium">Refresh</span>
@@ -525,8 +523,16 @@ onUnmounted(() => {
             </div>
 
             <button
+              @click="showSettingsModal = true"
+              class="flex items-center space-x-2 px-4 py-2 text-purple-700 hover:text-purple-800 bg-purple-50 hover:bg-purple-100 border border-purple-200 hover:border-purple-300 rounded-lg transition-all duration-200 shadow-sm hover:shadow"
+            >
+              <Settings class="w-5 h-5" />
+              <span class="font-medium">Settings</span>
+            </button>
+
+            <button
               @click="handleLogout"
-              class="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 border border-transparent hover:border-red-200"
+              class="flex items-center space-x-2 px-4 py-2 text-red-700 hover:text-red-800 bg-red-50 hover:bg-red-100 border border-red-200 hover:border-red-300 rounded-lg transition-all duration-200 shadow-sm hover:shadow"
             >
               <LogOut class="w-5 h-5" />
               <span class="font-medium">Logout</span>
@@ -602,14 +608,6 @@ onUnmounted(() => {
             @edit="handleEditDatabase"
           />
         </template>
-
-        <template #notifications>
-          <NotificationSubscribersTab />
-        </template>
-
-        <template #scheduler>
-          <SchedulerTab />
-        </template>
       </TabContainer>
     </main>
 
@@ -660,6 +658,12 @@ onUnmounted(() => {
       :server-name="terminalServerName"
       :is-open="showTerminalModal"
       @close="handleCloseTerminal"
+    />
+
+    <!-- Settings Modal -->
+    <SettingsModal
+      :show="showSettingsModal"
+      @close="showSettingsModal = false"
     />
   </div>
 </template>

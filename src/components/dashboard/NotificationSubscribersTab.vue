@@ -57,8 +57,14 @@ const fetchSubscribers = async () => {
   error.value = ''
   try {
     subscribers.value = await notificationsApi.getSubscribers()
-  } catch (err: any) {
-    error.value = err.response?.data?.error || 'Failed to fetch subscribers'
+  } catch (err: unknown) {
+    const axiosError = err as { response?: { status?: number; data?: { error?: string; detail?: string; message?: string } } }
+    if (axiosError.response?.status === 403) {
+      const data = axiosError.response?.data
+      error.value = data?.error || data?.detail || data?.message || 'Access denied'
+    } else {
+      error.value = 'Failed to fetch subscribers'
+    }
   } finally {
     loading.value = false
   }
@@ -68,8 +74,14 @@ const fetchSubscribers = async () => {
 const fetchUsers = async () => {
   try {
     users.value = await usersApi.getAll()
-  } catch (err: any) {
-    error.value = err.response?.data?.error || 'Failed to fetch users'
+  } catch (err: unknown) {
+    const axiosError = err as { response?: { status?: number; data?: { error?: string; detail?: string; message?: string } } }
+    if (axiosError.response?.status === 403) {
+      const data = axiosError.response?.data
+      error.value = data?.error || data?.detail || data?.message || 'Access denied'
+    } else {
+      error.value = 'Failed to fetch users'
+    }
   }
 }
 
@@ -182,7 +194,7 @@ onMounted(async () => {
     </div>
 
     <!-- Empty State -->
-    <div v-else-if="subscribers.length === 0">
+    <div v-else-if="subscribers.length === 0 && !error">
       <EmptyState
         :icon="Bell"
         title="No notification subscribers"
@@ -192,8 +204,8 @@ onMounted(async () => {
       />
     </div>
 
-    <!-- Subscribers Grid -->
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <!-- Subscribers List -->
+    <div v-else class="space-y-3">
       <SubscriberCard
         v-for="subscriber in subscribers"
         :key="subscriber.id"

@@ -30,24 +30,24 @@ const getStatColor = (color: string) => {
 </script>
 
 <template>
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
     <div
       v-for="stat in stats"
       :key="stat.label"
-      class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-shadow duration-200"
+      class="bg-white rounded-xl shadow-md border border-gray-100 px-4 py-3 hover:shadow-lg transition-shadow duration-200"
     >
-      <div class="flex items-start justify-between">
-        <div class="flex-1">
-          <p class="text-sm font-medium text-gray-600 mb-1">{{ stat.label }}</p>
-          <p class="text-3xl font-bold text-gray-900 mb-2">{{ stat.value }}</p>
-        </div>
+      <div class="flex items-center space-x-3">
         <div
           :class="[
-            'w-12 h-12 rounded-xl flex items-center justify-center',
+            'w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0',
             getStatColor(stat.color),
           ]"
         >
-          <component :is="stat.icon" class="w-6 h-6" />
+          <component :is="stat.icon" class="w-5 h-5" />
+        </div>
+        <div class="flex items-center space-x-2 min-w-0">
+          <span class="text-sm font-medium text-gray-600 whitespace-nowrap">{{ stat.label }}:</span>
+          <span class="text-xl font-bold text-gray-900">{{ stat.value }}</span>
         </div>
       </div>
     </div>

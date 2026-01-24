@@ -34,6 +34,8 @@ watch(activeTab, (newTab) => {
 const setActiveTab = (tabId: string) => {
   activeTab.value = tabId
 }
+
+defineExpose({ setActiveTab })
 </script>
 
 <template>
