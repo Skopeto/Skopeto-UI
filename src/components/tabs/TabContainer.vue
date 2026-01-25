@@ -42,13 +42,13 @@ defineExpose({ setActiveTab })
   <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
     <!-- Tab Navigation -->
     <div class="border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
-      <nav class="flex overflow-x-auto px-6 scrollbar-hide">
+      <nav class="flex overflow-x-auto scrollbar-hide">
         <button
           v-for="tab in tabs"
           :key="tab.id"
           @click="setActiveTab(tab.id)"
           :class="[
-            'flex items-center space-x-2 px-4 py-4 font-medium text-sm transition-all duration-200 border-b-2 whitespace-nowrap',
+            'flex-1 flex items-center justify-center space-x-2 px-4 py-4 font-medium text-sm transition-all duration-200 border-b-2 whitespace-nowrap',
             activeTab === tab.id
               ? 'text-blue-600 border-blue-600'
               : 'text-gray-600 border-transparent hover:text-blue-600 hover:border-blue-300',
