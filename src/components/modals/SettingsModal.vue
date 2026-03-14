@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { X, User, Users, Bell, Sliders } from 'lucide-vue-next'
+import { X, User, Users, Bell, Sliders, Terminal } from 'lucide-vue-next'
 import UserManagementTab from '../dashboard/UserManagementTab.vue'
 import NotificationSubscribersTab from '../dashboard/NotificationSubscribersTab.vue'
 import SchedulerTab from '../dashboard/SchedulerTab.vue'
 import AccountTab from '../dashboard/AccountTab.vue'
+import ServerChecksTab from '../dashboard/ServerChecksTab.vue'
 
 defineProps<{
   show: boolean
@@ -21,6 +22,7 @@ const sections = [
   { id: 'users', label: 'Users', icon: Users },
   { id: 'subscribers', label: 'Notification Subscribers', icon: Bell },
   { id: 'scheduler', label: 'Scheduler', icon: Sliders },
+  { id: 'checks', label: 'Server Commands', icon: Terminal },
 ]
 
 const handleClose = () => {
@@ -80,6 +82,7 @@ const handleClose = () => {
           <UserManagementTab v-else-if="activeSection === 'users'" />
           <NotificationSubscribersTab v-else-if="activeSection === 'subscribers'" />
           <SchedulerTab v-else-if="activeSection === 'scheduler'" />
+          <ServerChecksTab v-else-if="activeSection === 'checks'" />
         </div>
       </div>
     </div>

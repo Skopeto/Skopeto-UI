@@ -211,3 +211,25 @@ export interface Notification {
   created_at: string
   is_read: boolean
 }
+
+export interface ServerCheck {
+  id: number
+  name: string
+  command: string
+  threshold: number
+  operator: '>' | '<' | '>=' | '<=' | '==' | '!='
+}
+
+export interface RegisterServerCheckRequest {
+  name: string
+  command: string
+  threshold: number
+  operator: '>' | '<' | '>=' | '<=' | '==' | '!='
+}
+
+export interface UpdateServerCheckRequest {
+  name?: string
+  command?: string
+  threshold?: number
+  operator?: '>' | '<' | '>=' | '<=' | '==' | '!='
+}
