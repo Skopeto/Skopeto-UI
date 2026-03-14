@@ -31,7 +31,7 @@ export const databasesApi = {
   },
 
   // Get single server with health + databases with database health
-  getServerDatabases: async (serverId: number): Promise<{ data: ServerDatabasesData[] }> => {
+  getServerDatabases: async (serverId: number): Promise<{ data: ServerDatabasesData }> => {
     const { data } = await apiClient.get(`/databases/health/${serverId}`)
     return data
   },

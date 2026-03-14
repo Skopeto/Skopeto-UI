@@ -232,11 +232,11 @@ const toggleServerDatabasesExpand = async (serverId: number) => {
       try {
         const response = await databasesApi.getServerDatabases(serverId)
         const dbIndex = databasesData.value.findIndex((s) => s.server?.id === serverId)
-        if (dbIndex !== -1 && response?.data && response.data[0]) {
+        if (dbIndex !== -1 && response?.data) {
           databasesData.value[dbIndex] = {
-            server: response.data[0].server,
-            current_health: response.data[0].current_health,
-            databases: response.data[0].databases || [],
+            server: response.data.server,
+            current_health: response.data.current_health,
+            databases: response.data.databases || [],
           }
         }
       } catch (err) {
@@ -260,11 +260,11 @@ const refreshServerDatabases = async (serverId: number, event: Event) => {
     const response = await databasesApi.getServerDatabases(serverId)
 
     const dbIndex = databasesData.value.findIndex((s) => s.server?.id === serverId)
-    if (dbIndex !== -1 && response?.data && response.data[0]) {
+    if (dbIndex !== -1 && response?.data) {
       databasesData.value[dbIndex] = {
-        server: response.data[0].server,
-        current_health: response.data[0].current_health,
-        databases: response.data[0].databases || [],
+        server: response.data.server,
+        current_health: response.data.current_health,
+        databases: response.data.databases || [],
       }
     }
   } catch (err) {
