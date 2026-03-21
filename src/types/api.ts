@@ -69,14 +69,13 @@ export interface Server {
   status: 'up' | 'down' | 'decommissioned' | 'inactive'
 }
 
-export interface ServerHealth {
-  id: number | null
+export interface CheckResult {
   server_id: number
   status: 'healthy' | 'unhealthy' | 'offline' | 'error'
-  cpu_usage: number
-  memory_usage: number
-  disk_usage: number
-  uptime: string
+  check_name: string
+  value: number
+  unit: string
+  uptime: number
   checked_at: string
 }
 
@@ -126,14 +125,14 @@ export interface DatabaseWithHealth {
 
 export interface ServerWithHealth {
   server: Server
-  current_health: ServerHealth
+  check_results: CheckResult[]
   containers: Container[]
   databases?: DatabaseWithHealth[]
 }
 
 export interface MonitoringData {
   server: Server
-  current_health: ServerHealth
+  check_results: CheckResult[]
   containers: Container[]
   databases: DatabaseWithHealth[]
 }
@@ -168,7 +167,7 @@ export interface DatabaseUpdateRequest {
 
 export interface ServerDatabasesData {
   server: Server
-  current_health: ServerHealth
+  check_results: CheckResult[]
   databases: DatabaseWithHealth[]
 }
 
@@ -213,11 +212,13 @@ export interface Notification {
 }
 
 export interface ServerCheck {
-  id: number
+  health_check_id: number
   name: string
   command: string
   threshold: number
   operator: '>' | '<' | '>=' | '<=' | '==' | '!='
+  unit?: string
+  check_status: 'active' | 'inactive'
 }
 
 export interface RegisterServerCheckRequest {
@@ -225,6 +226,7 @@ export interface RegisterServerCheckRequest {
   command: string
   threshold: number
   operator: '>' | '<' | '>=' | '<=' | '==' | '!='
+  unit?: string
 }
 
 export interface UpdateServerCheckRequest {
@@ -232,4 +234,6 @@ export interface UpdateServerCheckRequest {
   command?: string
   threshold?: number
   operator?: '>' | '<' | '>=' | '<=' | '==' | '!='
+  unit?: string
+  check_status?: 'active' | 'inactive'
 }

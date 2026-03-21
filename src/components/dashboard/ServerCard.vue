@@ -1,10 +1,15 @@
 <script setup lang="ts">
-import { Trash2, Edit, Cpu, Activity, HardDrive, CheckCircle2, AlertTriangle, XCircle, Clock } from 'lucide-vue-next'
-import type { Server, ServerHealth } from '@/types/api'
+import { Trash2, Edit, Gauge, CheckCircle2, AlertTriangle, XCircle, Clock } from 'lucide-vue-next'
+import type { Server, CheckResult } from '@/types/api'
+import {
+  getOverallStatus,
+  formatCheckValue,
+  isPercentageCheck,
+} from '@/utils/healthUtils'
 
 withDefaults(defineProps<{
   server: Server
-  health: ServerHealth | null
+  checkResults: CheckResult[] | null
   showHealth?: boolean
 }>(), {
   showHealth: true
@@ -57,14 +62,14 @@ const getStatusIcon = (status: string) => {
         <p class="text-sm text-gray-600">{{ server.user_name }}</p>
       </div>
       <div
-        v-if="showHealth && health"
+        v-if="showHealth && checkResults?.length"
         :class="[
           'inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-md border text-xs font-medium',
-          getStatusColor(health.status),
+          getStatusColor(getOverallStatus(checkResults)),
         ]"
       >
-        <component :is="getStatusIcon(health.status)" class="w-3.5 h-3.5" />
-        <span class="capitalize">{{ health.status }}</span>
+        <component :is="getStatusIcon(getOverallStatus(checkResults))" class="w-3.5 h-3.5" />
+        <span class="capitalize">{{ getOverallStatus(checkResults) }}</span>
       </div>
       <div
         v-else-if="showHealth"
@@ -75,34 +80,17 @@ const getStatusIcon = (status: string) => {
       </div>
     </div>
 
-    <!-- Metrics Preview -->
-    <div v-if="showHealth && health" class="grid grid-cols-3 gap-3 mb-4">
-      <!-- CPU -->
-      <div class="text-center">
-        <Cpu class="w-5 h-5 text-gray-400 mx-auto mb-1" />
-        <p class="text-xs font-medium text-gray-600">CPU</p>
-        <p class="text-sm font-bold text-gray-900">
-          {{ Number(health.cpu_usage || 0).toFixed(1) }}%
-        </p>
-      </div>
-
-      <!-- Memory -->
-      <div class="text-center">
-        <Activity class="w-5 h-5 text-gray-400 mx-auto mb-1" />
-        <p class="text-xs font-medium text-gray-600">Memory</p>
-        <p class="text-sm font-bold text-gray-900">
-          {{ Number(health.memory_usage || 0).toFixed(1) }}%
-        </p>
-      </div>
-
-      <!-- Disk -->
-      <div class="text-center">
-        <HardDrive class="w-5 h-5 text-gray-400 mx-auto mb-1" />
-        <p class="text-xs font-medium text-gray-600">Disk</p>
-        <p class="text-sm font-bold text-gray-900">
-          {{ Number(health.disk_usage || 0).toFixed(1) }}%
-        </p>
-      </div>
+    <!-- Dynamic Metrics Preview -->
+    <div v-if="showHealth && checkResults?.length" class="grid grid-cols-3 gap-3 mb-4">
+      <template v-for="check in checkResults.slice(0, 3)" :key="check.check_name">
+        <div v-if="isPercentageCheck(check.unit)" class="text-center">
+          <Gauge class="w-5 h-5 text-gray-400 mx-auto mb-1" />
+          <p class="text-xs font-medium text-gray-600 truncate">{{ check.check_name }}</p>
+          <p class="text-sm font-bold text-gray-900">
+            {{ formatCheckValue(check.value, check.unit) }}
+          </p>
+        </div>
+      </template>
     </div>
 
     <!-- No Health Data -->

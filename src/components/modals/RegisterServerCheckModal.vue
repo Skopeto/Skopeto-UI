@@ -18,6 +18,7 @@ const registerForm = ref<RegisterServerCheckRequest>({
   command: '',
   threshold: 0,
   operator: '>',
+  unit: '%',
 })
 
 const operators = [
@@ -39,6 +40,7 @@ const handleClose = () => {
     command: '',
     threshold: 0,
     operator: '>',
+    unit: '%',
   }
   emit('close')
 }
@@ -105,24 +107,37 @@ const handleClose = () => {
           </select>
         </div>
 
-        <!-- Threshold -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1.5">
-            Threshold
-            <span class="text-red-500">*</span>
-          </label>
-          <input
-            v-model.number="registerForm.threshold"
-            type="number"
-            required
-            step="any"
-            placeholder="e.g., 80"
-            class="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-          <p class="mt-1 text-xs text-gray-500">
-            Alert triggers when: command output {{ registerForm.operator }} {{ registerForm.threshold }}
-          </p>
+        <!-- Threshold and Unit -->
+        <div class="grid grid-cols-3 gap-3">
+          <div class="col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">
+              Threshold
+              <span class="text-red-500">*</span>
+            </label>
+            <input
+              v-model.number="registerForm.threshold"
+              type="number"
+              required
+              step="any"
+              placeholder="e.g., 80"
+              class="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">
+              Unit
+            </label>
+            <input
+              v-model="registerForm.unit"
+              type="text"
+              placeholder="e.g., %"
+              class="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
         </div>
+        <p class="text-xs text-gray-500">
+          Alert triggers when: command output {{ registerForm.operator }} {{ registerForm.threshold }}{{ registerForm.unit }}
+        </p>
 
         <!-- Error Display -->
         <div v-if="error" class="p-3 bg-red-50 border border-red-200 rounded-lg">

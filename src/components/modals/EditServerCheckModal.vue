@@ -19,6 +19,7 @@ const editForm = ref<UpdateServerCheckRequest>({
   command: undefined,
   threshold: undefined,
   operator: undefined,
+  unit: undefined,
 })
 
 const operators = [
@@ -40,6 +41,7 @@ watch(
         command: newCheck.command,
         threshold: newCheck.threshold,
         operator: newCheck.operator,
+        unit: newCheck.unit,
       }
     }
   },
@@ -62,6 +64,9 @@ const handleSubmit = () => {
   if (editForm.value.operator !== props.check?.operator) {
     updatedFields.operator = editForm.value.operator
   }
+  if (editForm.value.unit !== props.check?.unit) {
+    updatedFields.unit = editForm.value.unit
+  }
 
   emit('submit', updatedFields)
 }
@@ -72,6 +77,7 @@ const handleClose = () => {
     command: undefined,
     threshold: undefined,
     operator: undefined,
+    unit: undefined,
   }
   emit('close')
 }
@@ -138,24 +144,37 @@ const handleClose = () => {
           </select>
         </div>
 
-        <!-- Threshold -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1.5">
-            Threshold
-            <span class="text-red-500">*</span>
-          </label>
-          <input
-            v-model.number="editForm.threshold"
-            type="number"
-            required
-            step="any"
-            placeholder="e.g., 80"
-            class="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-          <p class="mt-1 text-xs text-gray-500">
-            Alert triggers when: command output {{ editForm.operator }} {{ editForm.threshold }}
-          </p>
+        <!-- Threshold and Unit -->
+        <div class="grid grid-cols-3 gap-3">
+          <div class="col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">
+              Threshold
+              <span class="text-red-500">*</span>
+            </label>
+            <input
+              v-model.number="editForm.threshold"
+              type="number"
+              required
+              step="any"
+              placeholder="e.g., 80"
+              class="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">
+              Unit
+            </label>
+            <input
+              v-model="editForm.unit"
+              type="text"
+              placeholder="e.g., %"
+              class="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
         </div>
+        <p class="text-xs text-gray-500">
+          Alert triggers when: command output {{ editForm.operator }} {{ editForm.threshold }}{{ editForm.unit }}
+        </p>
 
         <!-- Error Display -->
         <div v-if="error" class="p-3 bg-red-50 border border-red-200 rounded-lg">

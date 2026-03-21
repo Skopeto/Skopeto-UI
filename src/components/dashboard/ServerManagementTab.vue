@@ -83,7 +83,7 @@ defineExpose({
         v-for="serverData in servers"
         :key="serverData.server?.id"
         :server="serverData.server!"
-        :health="serverData.current_health"
+        :check-results="serverData.check_results"
         :show-health="false"
         @delete="serverData.server?.id && handleDeleteClick(serverData.server.id)"
         @edit="serverData.server?.id && $emit('edit', serverData.server.id)"

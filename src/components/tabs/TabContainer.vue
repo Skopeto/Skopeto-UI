@@ -62,7 +62,7 @@ defineExpose({ setActiveTab })
 
     <!-- Tab Content -->
     <div class="transition-opacity duration-200">
-      <slot :name="activeTab" />
+      <slot :name="activeTab" :key="activeTab" />
     </div>
   </div>
 </template>

@@ -24,6 +24,7 @@ import type {
   Database,
   ServerDatabasesData,
 } from '@/types/api'
+import { getOverallStatus, getUptimeString } from '@/utils/healthUtils'
 import TabContainer from '@/components/tabs/TabContainer.vue'
 import ServersTab from '@/components/dashboard/ServersTab.vue'
 import ServerContainersTab from '@/components/dashboard/ServerContainersTab.vue'
@@ -150,7 +151,7 @@ const fetchServersData = async () => {
       // Populate databasesData from monitoringData to avoid redundant API call
       databasesData.value = monitoringData.value.map(data => ({
         server: data.server,
-        current_health: data.current_health,
+        check_results: data.check_results,
         databases: data.databases
       }))
     }
@@ -175,7 +176,7 @@ const refreshAll = async () => {
       // Populate databasesData from monitoringData to avoid redundant API call
       databasesData.value = monitoringData.value.map(data => ({
         server: data.server,
-        current_health: data.current_health,
+        check_results: data.check_results,
         databases: data.databases
       }))
     }
@@ -196,7 +197,7 @@ const fetchServerContainers = async (serverId: number) => {
     if (serverIndex !== -1 && monitoringData.value[serverIndex] && response?.data) {
       monitoringData.value[serverIndex].server =
         response.data.server || monitoringData.value[serverIndex].server
-      monitoringData.value[serverIndex].current_health = response.data.current_health || null
+      monitoringData.value[serverIndex].check_results = response.data.check_results || []
       monitoringData.value[serverIndex].containers = response.data.containers || []
       // Databases are handled separately via databasesApi - don't overwrite them here
     }
@@ -214,7 +215,7 @@ const toggleServerExpand = async (serverId: number) => {
     expandedServers.value.add(serverId)
     // Fetch health and containers when expanding if not already loaded
     const server = monitoringData.value.find((s) => s.server?.id === serverId)
-    if (server && !server.current_health) {
+    if (server && (!server.check_results || server.check_results.length === 0)) {
       await fetchServerContainers(serverId)
     }
   }
@@ -227,7 +228,7 @@ const toggleServerDatabasesExpand = async (serverId: number) => {
     expandedServers.value.add(serverId)
     // Fetch health and databases when expanding if not already loaded
     const server = databasesData.value.find((s) => s.server?.id === serverId)
-    if (server && !server.current_health) {
+    if (server && (!server.check_results || server.check_results.length === 0)) {
       loadingServers.value.add(serverId)
       try {
         const response = await databasesApi.getServerDatabases(serverId)
@@ -235,7 +236,7 @@ const toggleServerDatabasesExpand = async (serverId: number) => {
         if (dbIndex !== -1 && response?.data) {
           databasesData.value[dbIndex] = {
             server: response.data.server,
-            current_health: response.data.current_health,
+            check_results: response.data.check_results || [],
             databases: response.data.databases || [],
           }
         }
@@ -263,7 +264,7 @@ const refreshServerDatabases = async (serverId: number, event: Event) => {
     if (dbIndex !== -1 && response?.data) {
       databasesData.value[dbIndex] = {
         server: response.data.server,
-        current_health: response.data.current_health,
+        check_results: response.data.check_results || [],
         databases: response.data.databases || [],
       }
     }
@@ -415,16 +416,16 @@ const serversList = computed(() => {
 // Computed stats
 const stats = computed(() => {
   const total = monitoringData.value.length
-  const healthy = monitoringData.value.filter((s) => s.current_health?.status === 'healthy').length
+  const healthy = monitoringData.value.filter((s) => getOverallStatus(s.check_results) === 'healthy').length
   const unhealthy = monitoringData.value.filter(
-    (s) => s.current_health?.status === 'unhealthy',
+    (s) => getOverallStatus(s.check_results) === 'unhealthy',
   ).length
 
   const avgUptime =
     total > 0
       ? monitoringData.value.reduce((acc, s) => {
-          const uptime = s.current_health?.uptime
-          if (!uptime || uptime === 'unknown') return acc
+          const uptime = getUptimeString(s.check_results)
+          if (!uptime || uptime === 'N/A') return acc
 
           const uptimeMatch = uptime.match(/(\d+)/)
           return acc + (uptimeMatch && uptimeMatch[1] ? parseInt(uptimeMatch[1]) : 0)

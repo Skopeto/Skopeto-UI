@@ -69,8 +69,8 @@ const handleRegisterCheck = async (formData: RegisterServerCheckRequest) => {
 }
 
 // Edit check
-const handleEditCheck = (checkId: number) => {
-  const check = checks.value.find((c) => c.id === checkId)
+const handleEditCheck = (healthCheckId: number) => {
+  const check = checks.value.find((c) => c.health_check_id === healthCheckId)
   if (check) {
     checkToEdit.value = check
     editError.value = ''
@@ -85,7 +85,7 @@ const handleUpdateCheck = async (formData: UpdateServerCheckRequest) => {
   editLoading.value = true
 
   try {
-    await serverChecksApi.update(checkToEdit.value.id, formData)
+    await serverChecksApi.update(checkToEdit.value.health_check_id, formData)
     showEditModal.value = false
     editError.value = ''
     checkToEdit.value = null
@@ -174,10 +174,10 @@ onMounted(async () => {
     <div v-else class="space-y-3">
       <ServerCheckCard
         v-for="check in checks"
-        :key="check.id"
+        :key="check.health_check_id"
         :check="check"
-        @delete="handleDeleteClick(check.id)"
-        @edit="handleEditCheck(check.id)"
+        @delete="handleDeleteClick(check.health_check_id)"
+        @edit="handleEditCheck(check.health_check_id)"
       />
     </div>
 

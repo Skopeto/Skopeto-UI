@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import {
   HardDrive,
-  Cpu,
-  Activity,
   CheckCircle2,
   AlertTriangle,
   XCircle,
@@ -13,10 +11,18 @@ import {
   ChevronUp,
   Server,
   Terminal,
+  Gauge,
 } from 'lucide-vue-next'
 import StatsGrid from './StatsGrid.vue'
 import type { MonitoringData } from '@/types/api'
 import type { Component } from 'vue'
+import {
+  getOverallStatus,
+  getLatestCheckedAt,
+  formatCheckValue,
+  isPercentageCheck,
+  getUsageColorClass,
+} from '@/utils/healthUtils'
 
 interface Stat {
   label: string
@@ -66,12 +72,6 @@ const getStatusIcon = (status: string) => {
     default:
       return Clock
   }
-}
-
-const getUsageColor = (usage: number) => {
-  if (usage >= 80) return 'bg-red-500'
-  if (usage >= 60) return 'bg-yellow-500'
-  return 'bg-green-500'
 }
 
 const formatDate = (dateStr: string) => {
@@ -163,28 +163,28 @@ const getContainerStatusColor = (status: string) => {
                     <div
                       :class="[
                         'inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-md border text-xs font-medium',
-                        getStatusColor(serverData.current_health?.status || 'unknown'),
+                        getStatusColor(getOverallStatus(serverData.check_results)),
                       ]"
                     >
                       <component
-                        :is="getStatusIcon(serverData.current_health?.status || 'unknown')"
+                        :is="getStatusIcon(getOverallStatus(serverData.check_results))"
                         class="w-3.5 h-3.5"
                       />
                       <span class="capitalize">{{
-                        serverData.current_health?.status || 'unknown'
+                        getOverallStatus(serverData.check_results)
                       }}</span>
                     </div>
                   </div>
                   <div class="mt-1 flex items-center space-x-4 text-sm text-gray-500">
                     <span>{{ serverData.server?.user_name }}</span>
                     <span
-                      v-if="serverData.current_health?.checked_at"
+                      v-if="getLatestCheckedAt(serverData.check_results)"
                       class="flex items-center space-x-1"
                     >
                       <Clock class="w-3.5 h-3.5" />
                       <span
                         >Last snapshot at
-                        {{ formatDate(serverData.current_health.checked_at) }}</span
+                        {{ formatDate(getLatestCheckedAt(serverData.check_results)!) }}</span
                       >
                     </span>
                     <span v-else class="text-gray-400">No health check yet</span>
@@ -192,91 +192,30 @@ const getContainerStatusColor = (status: string) => {
                 </div>
               </div>
 
-              <!-- Middle: Metrics -->
-              <div class="hidden lg:flex items-center space-x-8 mr-8">
-                <!-- CPU -->
-                <div class="flex items-center space-x-3">
-                  <Cpu class="w-5 h-5 text-gray-400" />
-                  <div class="w-32">
-                    <div class="flex items-center justify-between mb-1">
-                      <span class="text-xs font-medium text-gray-600">CPU</span>
-                      <span class="text-xs font-semibold text-gray-900">
-                        {{
-                          serverData.current_health
-                            ? Number(serverData.current_health.cpu_usage || 0).toFixed(1)
-                            : '-'
-                        }}%
-                      </span>
-                    </div>
-                    <div class="w-full bg-gray-200 rounded-full h-1.5">
-                      <div
-                        :class="[
-                          'h-full rounded-full transition-all duration-300',
-                          getUsageColor(Number(serverData.current_health?.cpu_usage || 0)),
-                        ]"
-                        :style="{
-                          width: `${Math.min(Number(serverData.current_health?.cpu_usage || 0), 100)}%`,
-                        }"
-                      ></div>
+              <!-- Middle: Dynamic Check Metrics -->
+              <div class="hidden lg:flex items-center space-x-6 mr-8">
+                <template v-for="check in serverData.check_results" :key="check.check_name">
+                  <div v-if="isPercentageCheck(check.unit)" class="flex items-center space-x-3">
+                    <Gauge class="w-5 h-5 text-gray-400" />
+                    <div class="w-28">
+                      <div class="flex items-center justify-between mb-1">
+                        <span class="text-xs font-medium text-gray-600 truncate">{{ check.check_name }}</span>
+                        <span class="text-xs font-semibold text-gray-900">
+                          {{ formatCheckValue(check.value, check.unit) }}
+                        </span>
+                      </div>
+                      <div class="w-full bg-gray-200 rounded-full h-1.5">
+                        <div
+                          :class="[
+                            'h-full rounded-full transition-all duration-300',
+                            getUsageColorClass(check.value),
+                          ]"
+                          :style="{ width: `${Math.min(check.value, 100)}%` }"
+                        ></div>
+                      </div>
                     </div>
                   </div>
-                </div>
-
-                <!-- Memory -->
-                <div class="flex items-center space-x-3">
-                  <Activity class="w-5 h-5 text-gray-400" />
-                  <div class="w-32">
-                    <div class="flex items-center justify-between mb-1">
-                      <span class="text-xs font-medium text-gray-600">Memory</span>
-                      <span class="text-xs font-semibold text-gray-900">
-                        {{
-                          serverData.current_health
-                            ? Number(serverData.current_health.memory_usage || 0).toFixed(1)
-                            : '-'
-                        }}%
-                      </span>
-                    </div>
-                    <div class="w-full bg-gray-200 rounded-full h-1.5">
-                      <div
-                        :class="[
-                          'h-full rounded-full transition-all duration-300',
-                          getUsageColor(Number(serverData.current_health?.memory_usage || 0)),
-                        ]"
-                        :style="{
-                          width: `${Math.min(Number(serverData.current_health?.memory_usage || 0), 100)}%`,
-                        }"
-                      ></div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Disk -->
-                <div class="flex items-center space-x-3">
-                  <HardDrive class="w-5 h-5 text-gray-400" />
-                  <div class="w-32">
-                    <div class="flex items-center justify-between mb-1">
-                      <span class="text-xs font-medium text-gray-600">Disk</span>
-                      <span class="text-xs font-semibold text-gray-900">
-                        {{
-                          serverData.current_health
-                            ? Number(serverData.current_health.disk_usage || 0).toFixed(1)
-                            : '-'
-                        }}%
-                      </span>
-                    </div>
-                    <div class="w-full bg-gray-200 rounded-full h-1.5">
-                      <div
-                        :class="[
-                          'h-full rounded-full transition-all duration-300',
-                          getUsageColor(Number(serverData.current_health?.disk_usage || 0)),
-                        ]"
-                        :style="{
-                          width: `${Math.min(Number(serverData.current_health?.disk_usage || 0), 100)}%`,
-                        }"
-                      ></div>
-                    </div>
-                  </div>
-                </div>
+                </template>
               </div>
 
               <!-- Right: Actions & Container Count -->

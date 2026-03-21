@@ -17,14 +17,20 @@ export const serverChecksApi = {
   },
 
   update: async (
-    checkId: number,
+    healthCheckId: number,
     checkData: UpdateServerCheckRequest,
   ): Promise<ServerCheck> => {
-    const { data } = await apiClient.patch(`/server-checks/${checkId}`, checkData)
+    if (!healthCheckId) {
+      throw new Error('Health check ID is required for update')
+    }
+    const { data } = await apiClient.put(`/server-checks/${healthCheckId}`, checkData)
     return data.data
   },
 
-  delete: async (checkId: number): Promise<void> => {
-    await apiClient.delete(`/server-checks/${checkId}`)
+  delete: async (healthCheckId: number): Promise<void> => {
+    if (!healthCheckId) {
+      throw new Error('Health check ID is required for delete')
+    }
+    await apiClient.delete(`/server-checks/${healthCheckId}`)
   },
 }

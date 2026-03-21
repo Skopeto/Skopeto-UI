@@ -54,7 +54,7 @@ const truncateCommand = (command: string, maxLength: number = 50) => {
         </div>
       </div>
 
-      <!-- Middle: Threshold & Operator -->
+      <!-- Middle: Threshold, Operator & Status -->
       <div class="flex items-center space-x-3 flex-shrink-0">
         <div
           :class="[
@@ -63,7 +63,17 @@ const truncateCommand = (command: string, maxLength: number = 50) => {
           ]"
         >
           <span class="font-mono">{{ check.operator }}</span>
-          <span>{{ check.threshold }}</span>
+          <span>{{ check.threshold }}{{ check.unit }}</span>
+        </div>
+        <div
+          :class="[
+            'inline-flex items-center px-2 py-1 rounded-md border text-xs font-medium',
+            check.check_status === 'active'
+              ? 'text-green-600 bg-green-50 border-green-200'
+              : 'text-gray-600 bg-gray-50 border-gray-200'
+          ]"
+        >
+          {{ check.check_status }}
         </div>
       </div>
 
