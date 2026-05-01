@@ -4,7 +4,6 @@ import type { Server, CheckResult } from '@/types/api'
 import {
   getOverallStatus,
   formatCheckValue,
-  isPercentageCheck,
 } from '@/utils/healthUtils'
 
 withDefaults(defineProps<{
@@ -83,7 +82,7 @@ const getStatusIcon = (status: string) => {
     <!-- Dynamic Metrics Preview -->
     <div v-if="showHealth && checkResults?.length" class="grid grid-cols-3 gap-3 mb-4">
       <template v-for="check in checkResults.slice(0, 3)" :key="check.check_name">
-        <div v-if="isPercentageCheck(check.unit)" class="text-center">
+        <div class="text-center">
           <Gauge class="w-5 h-5 text-gray-400 mx-auto mb-1" />
           <p class="text-xs font-medium text-gray-600 truncate">{{ check.check_name }}</p>
           <p class="text-sm font-bold text-gray-900">

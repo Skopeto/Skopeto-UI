@@ -192,6 +192,7 @@ const getContainerStatusColor = (status: string) => {
               <!-- Middle: Dynamic Check Metrics -->
               <div class="hidden lg:flex items-center space-x-6 mr-8">
                 <template v-for="check in serverData.check_results" :key="check.check_name">
+                  <!-- Percentage checks: show with progress bar -->
                   <div v-if="isPercentageCheck(check.unit)" class="flex items-center space-x-3">
                     <Gauge class="w-5 h-5 text-gray-400" />
                     <div class="w-28">
@@ -209,6 +210,16 @@ const getContainerStatusColor = (status: string) => {
                           ]"
                           :style="{ width: `${Math.min(check.value, 100)}%` }"
                         ></div>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- Non-percentage checks: show as plain value -->
+                  <div v-else class="flex items-center space-x-3">
+                    <Gauge class="w-5 h-5 text-gray-400" />
+                    <div>
+                      <div class="text-xs font-medium text-gray-600 mb-0.5 truncate">{{ check.check_name }}</div>
+                      <div class="text-xs font-semibold text-gray-900">
+                        {{ formatCheckValue(check.value, check.unit) }}
                       </div>
                     </div>
                   </div>
